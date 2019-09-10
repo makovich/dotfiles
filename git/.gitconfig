@@ -7,7 +7,7 @@
     cc = commit --all --message
     ch = checkout
     am = commit --amend
-
+    ls-subtrees = !"git log | grep git-subtree-dir | awk '{ print $2 }'"
 [core]
     pager = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight | less
 
