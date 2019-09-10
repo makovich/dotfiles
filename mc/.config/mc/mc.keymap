@@ -1,0 +1,13 @@
+[main]
+Find = alt-slash; alt-question; f55
+
+[panel]
+Left = 
+Right = 
+Top = alt-lt; home; left
+Bottom = alt-gt; end; right
+CdParent = ctrl-pgup; backspace
+
+MarkDown = space
+
+Search = als-s

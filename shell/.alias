@@ -1,0 +1,78 @@
+alias v=$EDITOR
+alias br=broot
+alias cls=clear
+alias skrg="sk --ansi --delimiter=: --no-multi --interactive --preview='bat --color=always --style=numbers {1}' --cmd 'rg \"{}\" --hidden --glob=\"!.git/\" --glob=\"!rusty-tags.vi\" --color=always --line-number' | cut -f1,2 -d':' | sed 's/:/ \+/g' | xargs -I{} sh -c '</dev/tty $EDITOR {}'"
+
+if ls --color > /dev/null 2>&1; then # GNU `ls`
+  colorflag="--color"
+else # macOS `ls`
+  colorflag="-G"
+fi
+
+alias ls="ls -alFh ${colorflag}"
+alias l=ls
+
+alias     ..="cd .."
+alias    ...="cd ../.."
+alias   ....="cd ../../.."
+alias  .....="cd ../../../.."
+alias ......="cd ../../../../.."
+
+alias mc="TERM=tmux-256color mc"
+
+# Usage: codi [filetype] [filename]
+codi() {
+  local syntax="${1:-javascript}"
+  shift
+  nvim -c \
+    "let g:startify_disable_at_vimenter = 1 |\
+    let g:codi#width = 40.0 |\
+    set bt=nofile ls=0 noru nonu nornu |\
+    hi ColorColumn ctermbg=NONE |\
+    hi VertSplit ctermbg=NONE |\
+    hi NonText ctermfg=0 |\
+    Codi $syntax" "$@"
+}
+
+code() {
+  if [[ $# -gt 0 ]] && test -d "$HOME/code/$*"; then
+    pushd && cd $HOME/code/$*
+  else
+    pushd && cd $HOME/code/$(fd . $HOME/code --max-depth 1 --type d --follow | cut -d/ -f5- | sk --no-multi --query "$*")
+  fi
+}
+
+tm() {
+  [[ -n "$TMUX" ]] && change="switch-client" || change="attach-session"
+  if [ $1 ]; then
+    tmux $change -t "$1" 2>/dev/null || (tmux new-session -d -s $1 && tmux $change -t "$1"); return
+  fi
+  session=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | fzf --exit-0) && tmux $change -t "$session" || echo "No sessions found."
+}
+
+ffh() {
+  ff 'history'
+}
+
+ff() {
+  local cols sep ff_db_file open
+  cols=$(( COLUMNS / 3 ))
+  sep='{::}'
+  ff_db_file="$(/bin/ls -d1u $HOME/*.ff/ | head -1)places.sqlite"
+  tmp=$(mktemp)
+  if [[ $# -gt 0 ]]; then
+    query="select substr(title, 1, $cols), min(url) from moz_places group by title order by last_visit_date desc"
+  else
+    query="select substr(b.title, 1, $cols), p.url from moz_bookmarks as b left join moz_places as p on b.fk=p.id where b.type=1 order by p.last_visit_date desc"
+  fi
+
+  if [ "$(uname)" = "Darwin" ]; then
+    open=open
+  else
+    open=xdg-open
+  fi
+  cp -f "$ff_db_file" $tmp
+  sqlite3 -separator $sep $tmp $query |
+  awk -F $sep '{printf "%-'$cols's  \x1b[36m%s\x1b[m\n", $1, $2}' |
+  sk --ansi | sed 's#.*\(https*://\)#\1#' | xargs $open > /dev/null 2> /dev/null
+}

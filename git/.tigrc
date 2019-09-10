@@ -1,0 +1,41 @@
+bind generic h scroll-left
+bind generic j move-down
+bind generic k move-up
+bind generic l scroll-right
+
+bind generic g  none
+bind generic gg move-first-line
+bind main    G  move-last-line
+bind generic G  move-last-line
+
+bind generic gp parent
+bind generic gb back
+
+bind generic b     move-page-up
+bind generic <C-f> move-page-down
+bind generic <C-b> move-page-up
+bind generic <C-r> refresh
+
+bind generic H view-help
+bind generic B view-blame
+
+bind status  S status-update
+bind stage   S status-update
+bind status  R status-revert
+bind stage   R status-revert
+bind stage   ! stage-split-chunk
+
+set line-graphics = utf-8
+
+set main-view-date = relative
+set blame-view-date = relative
+set refs-view-date = relative
+set stash-view-date = relative
+set tree-view-date = relative
+
+set diff-highlight = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight
+
+color cursor       white  blue   bold
+color status       red    black  dim
+color title-focus  white  black  bold
+color title-blur   black  black

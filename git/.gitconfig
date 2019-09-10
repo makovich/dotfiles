@@ -1,0 +1,24 @@
+[user]
+    name = paul
+    email = paul@makovi.ch
+
+[alias]
+    br = branch
+    cc = commit --all --message
+    ch = checkout
+    am = commit --amend
+
+[core]
+    pager = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight | less
+
+[diff]
+    tool = icdiff
+
+[difftool]
+    prompt = false
+
+[difftool "icdiff"]
+    cmd = /usr/local/bin/icdiff --line-numbers $LOCAL $REMOTE
+
+[icdiff]
+    options = --highlight --line-numbers
