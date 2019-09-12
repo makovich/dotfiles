@@ -7,14 +7,10 @@ endif
 
 call plug#begin('~/.vim/plugged')
 
-Plug 'tweekmonster/startuptime.vim'
-
-Plug 'christoomey/vim-tmux-navigator'           " ctrl+h/j/k/l
-Plug 'jremmen/vim-ripgrep'                      " ripgrep word under cursor
+" Plug 'tweekmonster/startuptime.vim'             " :StartupTime ~/foo.vim 100
 
 Plug 'itchyny/lightline.vim'
 Plug 'tpope/vim-vinegar'                        " netrw: -, ~, ./!, y., gh
-" Plug 'ctrlpvim/ctrlp.vim'
 Plug 'haya14busa/incsearch.vim'
 Plug 'tpope/vim-repeat'
 Plug 'tpope/vim-unimpaired'
@@ -26,12 +22,18 @@ Plug 'tpope/vim-surround'                       " yssb, ysiw{, cs(', ds[, cs'<q>
 Plug 'wellle/targets.vim'                       " Pair (ci(, da[, dinb), Separator (i., A;), Argument (cia, daa), Quote (cib, di', cinq), Tag (it)
 Plug 'justinmk/vim-sneak'                       " f-motion on steroids
 
-Plug 'Shougo/neosnippet.vim'
-" Plug 'honza/vim-snippets'                     " install but don't load; below it's added to the runtime path
 
 Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'pbogut/fzf-mru.vim'
+Plug 'jremmen/vim-ripgrep'                      " grep word under the cursor <leader>g / <leader>G
+
+" ide
+Plug 'sheerun/vim-polyglot'
+Plug 'w0rp/ale'
+
+Plug 'Shougo/neosnippet.vim'
+" Plug 'honza/vim-snippets'                     " install but don't load; below it's added to the runtime path
 
 Plug 'prabirshrestha/asyncomplete.vim', { 'tag': 'v1.7' }
 Plug 'prabirshrestha/async.vim'
@@ -43,21 +45,21 @@ Plug 'yami-beta/asyncomplete-omni.vim'
 " Plug 'prabirshrestha/vim-lsp'
 " Plug 'prabirshrestha/asyncomplete-lsp.vim'
 
+" rust
 Plug 'racer-rust/vim-racer'
 " Plug 'rhysd/rust-doc.vim'
 
+" scratchpad
+Plug 'metakirby5/codi.vim'
+
+" writer mode
+Plug 'junegunn/goyo.vim'  ", { 'for': ['markdown'] }
+
+" vim lang
 Plug 'Shougo/neco-vim'
 Plug 'prabirshrestha/asyncomplete-necovim.vim'
 
-Plug 'sheerun/vim-polyglot'
-Plug 'w0rp/ale'
-Plug 'metakirby5/codi.vim'
-Plug 'tpope/vim-fugitive'
-
-Plug 'junegunn/goyo.vim'  ", { 'for': ['markdown'] }
-Plug 'vimwiki/vimwiki'
-" Plug 'wmvanvliet/jupyter-vim', { 'on': 'JupyterConnect' }
-
+" lua
 Plug 'xolox/vim-misc'
 Plug 'xolox/vim-lua-ftplugin'
 
