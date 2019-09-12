@@ -242,6 +242,10 @@ augroup VimTune
   au filetype crontab setlocal nobackup nowritebackup
 augroup END
 
+" auto-pairs https://github.com/jiangmiao/auto-pairs/pull/266
+inoremap <buffer> <silent> <M-E> <C-R>=AutoPairsFastWrap("E")<CR>
+inoremap <buffer> <silent> <M-$> <C-R>=AutoPairsFastWrap("$")<CR>
+
 " asyncomplete.vim
 let g:asyncomplete_remove_duplicates = 0
 let g:asyncomplete_smart_completion = 0
