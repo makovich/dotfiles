@@ -1,0 +1,244 @@
+*rust-doc.txt*          Search and open Rust documents from Vim.
+
+Author : rhysd <lin90162@yahoo.co.jp>
+Version : 0.1
+
+CONTENTS                *rust-doc.vim-contents*
+
+Introduction            |rust-doc.vim-introduction|
+Install                 |rust-doc.vim-install|
+Usage                   |rust-doc.vim-usage|
+Variables               |rust-doc.vim-variables|
+Repository              |rust-doc.vim-repository-page|
+License                 |rust-doc.vim-lisence|
+
+
+==============================================================================
+INTRODUCTION                                         *rust-doc.vim-introduction*
+
+*rust-doc.vim* searches documents (standard libraries, libraries your crate
+depends on, and so on) and opens it by browser.  You can use 4 interfaces to
+open them.
+
+- |:RustDoc| command for detailed search
+- |K| mapping in your Rust code to search under the cursor
+- |unite.vim| source to list up all candidates and select one
+- |denite.nvim| source to list up all candidates and select one
+
+
+==============================================================================
+INSTALL                                                   *rust-doc.vim-install*
+
+If you use some plugin manager, please follow the instruction of them.
+For example, you can install this plugin with |neobundle.vim| as below.
+>
+    NeoBundle 'rhysd/rust-doc.vim'
+<
+Otherwise, copy all directories and files in "autoload", "plugin" and "doc"
+directories to your "~/.vim" directory's corresponding directories.
+
+(Optional)
+By default, rust-doc.vim searches documents installed by rustup.  If you want
+to see your own standard library documents downloaded to elsewhere, you must
+set |g:rust_doc#downloaded_rust_doc_dir|.  The variable should be string type
+and contain the path to downloaded rust documents directory.
+
+e.g.
+
+    1. Download documents and set it to your document directory
+>
+    $ wget https://static.rust-lang.org/dist/rust-1.0.0-i686-unknown-linux-gnu.tar.gz
+    $ tar xf rust-1.0.0-i686-unknown-linux-gnu.tar.gz
+    $ mv rust-1.0.0-i686-unknown-linux-gnu/rust-doc ~/Documents/
+<
+    2. Set |g:rust_doc#downloaded_rust_doc_dir|
+>
+    let g:rust_doc#downloaded_rust_doc_dir = '~/Documents/rust-docs'
+<
+
+==============================================================================
+USAGE                                                       *rust-doc.vim-usage*
+
+As described above, 4 interfaces are available.
+
+------------------------------------------------------------------------------
+1. |:RustDoc| command
+
+    *:RustDoc* {crate-or-module} [{identifier}]            *rust-doc.vim-:RustDoc*
+
+        You can search the documents with crate name or module
+        name with identifier.  Identifier is a name of constant, trait, struct
+        and so on.
+
+        For example, assume your crate uses "rand" crate.
+
+>
+        (1) :RustDoc rand
+        (2) :RustDoc rand::distributions
+        (3) :RustDoc rand Rng
+<
+
+        (1) opens the document for crate rand.
+        (2) opens the document for module rand::distributions.
+        (3) opens the document for trait rand::Rng.
+
+        Of course standard libraries documents are also available.
+>
+        :RustDoc std::vec
+<
+
+    *:RustDocFuzzy* {identifier}                      *rust-doc.vim-:RustDocFuzzy*
+
+        |rust-doc.vim| searches the documents with {identifier} fuzzily.
+        It lists up all possibilities and you can select one of them.  If only
+        one candidate exists, |rust-doc.vim| opens it instantly.
+
+        e.g.
+>
+        :RustDocFuzzy distributions
+<
+
+    *:RustDocModule* {name}                          *rust-doc.vim-:RustDocModule*
+
+        It searches the name of modules with {name}.
+        If only one candidate is found, |rust-doc.vim| opens the document
+        instantly.  Otherwise, it lists up all candidates and you can select
+        on of them.
+
+        e.g.
+>
+        :RustDocModule std::io
+<
+
+------------------------------------------------------------------------------
+2. |K| mapping in your Rust code                          *rust-doc.vim-K-mapping*
+
+
+    |rust-doc.vim| automatically overwrites default |K| mapping only in Rust
+    code.  The K mapping opens most corresponding document.  It is available
+    in normal mode and visual mode.  In normal mode, the word under the cursor
+    is used.  In visual mode, the selected text is used.
+
+------------------------------------------------------------------------------
+3. |unite.vim| source                                  *rust-doc.vim-unite-source*
+
+    You can select from all document candidates with unite.vim interface.
+>
+    :Unite rust/doc
+<
+    If you want to use unite.vim for `K` mapping, you can setup in your vimrc as
+    follows.
+>
+    let g:rust_doc#define_map_K = 0
+    augroup vimrc-rust
+        autocmd!
+        autocmd FileType rust nnoremap <buffer><silent>K :<C-u>Unite rust/doc:cursor -no-empty -immediately
+        autocmd FileType rust vnoremap <buffer><silent>K :Unite rust/doc:visual -no-empty -immediately
+    augroup END
+<
+    It may takes some time.  If you don't want to wait and it is enough for
+    you to search only module names, please specify "modules" to the argument
+    of "rust/doc" source as below.
+>
+    :Unite rust/doc:modules
+
+
+------------------------------------------------------------------------------
+4. |denite.nvim| source                                 *rust-doc.vim-denite-source*
+
+    You can select from all document candidates with denite.nvim interface.
+>
+    :Denite rust/doc
+<
+    If you want to use denite.nvim for `K` mapping, you can setup in your vimrc as
+    follows.
+>
+    let g:rust_doc#define_map_K = 0
+    augroup vimrc-rust
+        autocmd!
+        autocmd FileType rust nnoremap <buffer><silent>K :<C-u>DeniteCursorWord rust/doc<CR>
+    augroup END
+<
+    It may takes some time.  If you don't want to wait and it is enough for
+    you to search only module names, please specify "modules" to the argument
+    of "rust/doc" source as below.
+>
+    :Denite rust/doc:modules
+<
+
+==============================================================================
+VARIABLES                                               *rust-doc.vim-variables*
+
+g:rust_doc#vim_open_cmd                                *g:rust_doc#vim_open_cmd*
+
+Vim command to open the path to a document.  |rust-doc.vim| uses it to open the
+document if it is not empty.  The command must take a URL to the local file.
+
+
+g:rust_doc#open_cmd                                        *g:rust_doc#open_cmd*
+
+Shell command to open the path to a document.  |rust-doc.vim| uses it to open
+the document if it is not empty.  The command must take a URL to the local
+file.
+
+
+g:rust_doc#do_not_ask_for_module_list
+                                         *g:rust_doc#do_not_ask_for_module_list*
+
+If the value is 1, |rust-doc.vim|| never ask if it shows the list of
+modules/identifiers when no document is found.
+The default value is 0.
+
+
+g:rust_doc#define_map_K                                *g:rust_doc#define_map_K*
+
+If the value is 1, |K| mappings described above is defined.
+The default value is 1.
+
+
+g:rust_doc#downloaded_rust_doc_dir          *g:rust_doc#downloaded_rust_doc_dir*
+
+Rust tar package contains documents directory "rust-doc".  If you want to
+search the documents in it, you must set the path to the directory to this
+variable.  If the value is not empty, |rust-doc.vim| searches the documents in
+it.  The default value is "".
+
+
+==============================================================================
+REPOSITORY PAGE                                   *rust-doc.vim-repository-page*
+
+The repository of |rust-doc.vim| is hosted in GitHub.
+
+https://github.com/rhysd/rust-doc.vim
+
+You can also see the screenshots in the repository page.
+
+
+==============================================================================
+LICENSE                                                   *rust-doc.vim-license*
+
+|rust-doc.vim| is distributed under The MIT license.
+
+  Copyright (c) 2015 rhysd
+
+  Permission is hereby granted, free of charge, to any person obtaining
+  a copy of this software and associated documentation files (the
+  "Software"), to deal in the Software without restriction, including
+  without limitation the rights to use, copy, modify, merge, publish,
+  distribute, sublicense, and/or sell copies of the Software, and to
+  permit persons to whom the Software is furnished to do so, subject to
+  the following conditions:
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+==============================================================================
+vim:tw=78:colorcolumn=78:ts=8:ft=help:norl:et:fen:fdl=0:
