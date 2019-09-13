@@ -301,7 +301,7 @@ let g:asyncomplete_buffer_clear_cache = 1
 
 imap <expr> <C-j> pumvisible() ? "\<C-n>" : "\<C-j>"
 imap <expr> <C-k> pumvisible() ? "\<C-p>" : "\<C-k>"
-imap <expr> <cr> pumvisible() ? "\<Esc>o" : "\<cr>"
+imap <expr> <cr> pumvisible() ? "\<Esc>a" : "\<cr>"
 
 " vim-racer
 let g:racer_experimental_completer = 1
