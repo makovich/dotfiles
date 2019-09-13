@@ -33,7 +33,6 @@ Plug 'w0rp/ale'
 
 Plug 'prabirshrestha/asyncomplete.vim'          " , { 'tag': 'v1.7' }
 Plug 'prabirshrestha/async.vim'
-Plug 'prabirshrestha/asyncomplete-neosnippet.vim'
 Plug 'prabirshrestha/asyncomplete-buffer.vim'
 Plug 'prabirshrestha/asyncomplete-file.vim'
 Plug 'yami-beta/asyncomplete-omni.vim'
@@ -43,6 +42,7 @@ Plug 'yami-beta/asyncomplete-omni.vim'
 " Plug 'prabirshrestha/asyncomplete-lsp.vim'
 
 Plug 'Shougo/neosnippet.vim'
+Plug 'prabirshrestha/asyncomplete-neosnippet.vim'
 " Plug 'honza/vim-snippets'                     " install but don't load; below it's added to the runtime path
 
 " rust
@@ -64,13 +64,6 @@ Plug 'xolox/vim-misc'
 Plug 'xolox/vim-lua-ftplugin'
 
 call plug#end()
-
-let g:lua_check_syntax = 0
-let g:lua_check_globals = 0
-let g:lua_complete_omni = 1
-
-" let g:python3_host_prog = '/usr/local/bin/python3'
-" let g:loaded_python_provider = 1
 
 colorscheme monokai_pro
 
@@ -141,6 +134,8 @@ set background=dark
 set backspace=2
 set clipboard=unnamedplus
 set completeopt=longest,menuone,noinsert
+set concealcursor=niv
+set conceallevel=2
 set copyindent
 set cursorline
 set expandtab
@@ -247,48 +242,75 @@ inoremap <buffer> <silent> <M-E> <C-R>=AutoPairsFastWrap("E")<CR>
 inoremap <buffer> <silent> <M-$> <C-R>=AutoPairsFastWrap("$")<CR>
 
 " asyncomplete.vim
+call asyncomplete#register_source(asyncomplete#sources#neosnippet#get_source_options({
+      \ 'name': 'neosnippet',
+      \ 'whitelist': ['*'],
+      \ 'priority': 3,
+      \ 'completor': function('asyncomplete#sources#neosnippet#completor'),
+      \ }))
+
+call asyncomplete#register_source(asyncomplete#sources#ale#get_source_options({
+      \ 'name': 'ale',
+      \ 'priority': 5,
+      \ }))
+
+call asyncomplete#register_source(asyncomplete#sources#file#get_source_options({
+      \ 'name': 'file',
+      \ 'whitelist': ['*'],
+      \ 'priority': 2,
+      \ 'completor': function('asyncomplete#sources#file#completor')
+      \ }))
+
+call asyncomplete#register_source(asyncomplete#sources#omni#get_source_options({
+      \ 'name': 'omni',
+      \ 'whitelist': ['*'],
+      \ 'blacklist': ['c', 'cpp', 'html'],
+      \ 'refresh_pattern': '\(\k\+$\|\.$\|:$\)',
+      \ 'priority': 4,
+      \ 'completor': function('asyncomplete#sources#omni#completor')
+      \  }))
+
+call asyncomplete#register_source(asyncomplete#sources#necovim#get_source_options({
+      \ 'name': 'necovim',
+      \ 'whitelist': ['vim'],
+      \ 'priority': 5,
+      \ 'completor': function('asyncomplete#sources#necovim#completor'),
+      \ }))
+
+function! s:sort_by_priority_preprocessor(options, matches) abort
+  let l:items = []
+  for [l:source_name, l:matches] in items(a:matches)
+    for l:item in l:matches['items']
+      if stridx(l:item['word'], a:options['base']) == 0
+        let l:item['priority'] = get(asyncomplete#get_source_info(l:source_name),'priority',0)
+        call add(l:items, l:item)
+      endif
+    endfor
+  endfor
+
+  let l:items = sort(l:items, {a, b -> b['priority'] - a['priority']})
+
+  call asyncomplete#preprocess_complete(a:options, l:items)
+endfunction
+
+let g:asyncomplete_preprocessor = [function('s:sort_by_priority_preprocessor')]
 let g:asyncomplete_remove_duplicates = 0
 let g:asyncomplete_smart_completion = 0
 let g:asyncomplete_auto_popup = 1
 let g:asyncomplete_buffer_clear_cache = 1
 
-imap <expr><C-n> pumvisible() ? "\<C-n>" : "\<Plug>(asyncomplete_force_refresh)"
-smap <expr><C-n> pumvisible() ? "\<C-n>" : "\<Plug>(asyncomplete_force_refresh)"
-inoremap <expr><CR> pumvisible() ? "\<ESC>o" : "\<CR>"
-
-call asyncomplete#register_source(asyncomplete#sources#neosnippet#get_source_options({
-    \ 'name': 'neosnippet',
-    \ 'whitelist': ['*'],
-    \ 'priority': 3,
-    \ 'completor': function('asyncomplete#sources#neosnippet#completor'),
-    \ }))
-
-call asyncomplete#register_source(asyncomplete#sources#file#get_source_options({
-    \ 'name': 'file',
-    \ 'whitelist': ['*'],
-    \ 'priority': 2,
-    \ 'completor': function('asyncomplete#sources#file#completor')
-    \ }))
-
-call asyncomplete#register_source(asyncomplete#sources#omni#get_source_options({
-    \ 'name': 'omni',
-    \ 'whitelist': ['*'],
-    \ 'blacklist': ['c', 'cpp', 'html'],
-    \ 'refresh_pattern': '\(\k\+$\|\.$\|:$\)',
-    \ 'priority': 4,
-    \ 'completor': function('asyncomplete#sources#omni#completor')
-    \  }))
-
-call asyncomplete#register_source(asyncomplete#sources#necovim#get_source_options({
-    \ 'name': 'necovim',
-    \ 'whitelist': ['vim'],
-    \ 'priority': 5,
-    \ 'completor': function('asyncomplete#sources#necovim#completor'),
-    \ }))
+imap <expr> <C-j> pumvisible() ? "\<C-n>" : "\<C-j>"
+imap <expr> <C-k> pumvisible() ? "\<C-p>" : "\<C-k>"
+imap <expr> <cr> pumvisible() ? "\<Esc>o" : "\<cr>"
 
 " vim-racer
 let g:racer_experimental_completer = 1
 let g:racer_insert_paren = 1
+
+" vim-lua-ftplugin
+let g:lua_check_syntax = 0
+let g:lua_check_globals = 0
+let g:lua_complete_omni = 1
 
 augroup Rust
   au!
@@ -310,15 +332,11 @@ imap <C-_> <Esc>:Commentary<CR>i
 imap <C-F> <C-G>u<Esc>[s1z=`]a<C-G>u
 
 " neosnippets
-if has('conceal')
-  set conceallevel=2 concealcursor=niv
-endif
-
 let g:neosnippet#disable_runtime_snippets = { '_' : 1 }
 let g:neosnippet#snippets_directory = [ '~/.vim/plugged/vim-snippets/snippets', '~/.vim/snippets' ]
 
-imap <expr><TAB> neosnippet#expandable_or_jumpable() ? "\<Plug>(neosnippet_expand_or_jump)" : "\<TAB>"
-smap <expr><TAB> neosnippet#expandable_or_jumpable() ? "\<Plug>(neosnippet_expand_or_jump)" : "\<TAB>"
+imap <expr> <Tab> neosnippet#expandable_or_jumpable() ? "\<Plug>(neosnippet_expand_or_jump)" : "\<Tab>"
+smap <expr> <Tab> neosnippet#expandable_or_jumpable() ? "\<Plug>(neosnippet_expand_or_jump)" : "\<Tab>"
 
 " Zen mode
 nmap \z mt:Goyo<CR>'tzz
@@ -479,9 +497,6 @@ nmap <Leader>T <M-t>
 
 " vim-polyglot
 let g:rust_use_custom_ctags_defs = 1
-
-" vim-tmux-navigator
-let g:tmux_navigator_save_on_switch = 1
 
 " ALE
 nmap ]w <Plug>(ale_next_wrap)
