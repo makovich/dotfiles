@@ -307,6 +307,10 @@ imap <expr> <cr> pumvisible() ? "\<Esc>o" : "\<cr>"
 let g:racer_experimental_completer = 1
 let g:racer_insert_paren = 1
 
+" rust-doc.vim
+" let g:rust_doc#define_map_K = 0
+" let g:rust_doc#vim_open_cmd = 'rightbelow vsplit | w3m'
+
 " vim-lua-ftplugin
 let g:lua_check_syntax = 0
 let g:lua_check_globals = 0
