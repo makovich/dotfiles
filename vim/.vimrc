@@ -22,7 +22,6 @@ Plug 'tpope/vim-surround'                       " yssb, ysiw{, cs(', ds[, cs'<q>
 Plug 'wellle/targets.vim'                       " Pair (ci(, da[, dinb), Separator (i., A;), Argument (cia, daa), Quote (cib, di', cinq), Tag (it)
 Plug 'justinmk/vim-sneak'                       " f-motion on steroids
 
-
 Plug 'junegunn/fzf'
 Plug 'junegunn/fzf.vim'
 Plug 'pbogut/fzf-mru.vim'
@@ -32,21 +31,22 @@ Plug 'jremmen/vim-ripgrep'                      " grep word under the cursor <le
 Plug 'sheerun/vim-polyglot'
 Plug 'w0rp/ale'
 
-Plug 'Shougo/neosnippet.vim'
-" Plug 'honza/vim-snippets'                     " install but don't load; below it's added to the runtime path
-
-Plug 'prabirshrestha/asyncomplete.vim', { 'tag': 'v1.7' }
+Plug 'prabirshrestha/asyncomplete.vim'          " , { 'tag': 'v1.7' }
 Plug 'prabirshrestha/async.vim'
 Plug 'prabirshrestha/asyncomplete-neosnippet.vim'
 Plug 'prabirshrestha/asyncomplete-buffer.vim'
 Plug 'prabirshrestha/asyncomplete-file.vim'
 Plug 'yami-beta/asyncomplete-omni.vim'
+
 " Plug 'prabirshrestha/asyncomplete-tags.vim'
 " Plug 'prabirshrestha/vim-lsp'
 " Plug 'prabirshrestha/asyncomplete-lsp.vim'
 
+Plug 'Shougo/neosnippet.vim'
+" Plug 'honza/vim-snippets'                     " install but don't load; below it's added to the runtime path
+
 " rust
-Plug 'racer-rust/vim-racer'
+" Plug 'racer-rust/vim-racer'
 " Plug 'rhysd/rust-doc.vim'
 
 " scratchpad
@@ -610,9 +610,3 @@ augroup Lightline
   au!
   au User ALELintPost if exists('#lightline') | call lightline#update() | redrawstatus | endif
 augroup END
-
-let g:vimwiki_list = [{ 'path': '~/belarustianin/', 'syntax': 'markdown', 'ext': '.md' },
-                     \{ 'path': '~/notes/' }]
-let g:vimwiki_auto_chdir = 1
-let g:vimwiki_use_calendar = 1
-let g:vimwiki_url_maxsave = 0
