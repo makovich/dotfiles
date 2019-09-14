@@ -16,6 +16,7 @@ Plug 'tpope/vim-repeat'
 Plug 'tpope/vim-unimpaired'
 Plug 'tpope/vim-commentary'
 Plug 'qpkorr/vim-bufkill'
+Plug 'lyokha/vim-xkbswitch'
 
 Plug 'jiangmiao/auto-pairs'
 Plug 'tpope/vim-surround'                       " yssb, ysiw{, cs(', ds[, cs'<q>, cst'
@@ -170,6 +171,12 @@ set tabstop=2
 set textwidth=0
 set updatetime=300
 set visualbell t_vb=
+
+" vim-xkbswitch
+if has('macunix')
+  let g:XkbSwitchLib = '/usr/local/lib/libInputSourceSwitcher.dylib'
+  let g:XkbSwitchEnabled = 1
+endif
 
 " Hardmode
 noremap <Up> <Nop>
