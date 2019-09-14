@@ -4,7 +4,7 @@ source ~/.zsh/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
 # Prompt
 # setopt prompt_subst
 PROMPT="%(1j.%(?.%B%K{2}%F{16}.%B%K{1}%F{16}).%(?.%F{2}.%F{1}))%(!.#.$)%k%f%b "
-RPROMPT="%F{242}%~%f"
+RPROMPT="%F{242}%~%f %B%K{242}%F{232} %n@%m %f%k%b"
 
 # Node Version Manager
 # source "$NVM_DIR/nvm.sh"
