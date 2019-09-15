@@ -1,7 +1,20 @@
 alias v=$EDITOR
 alias br=broot
 alias cls=clear
-alias skrg="sk --ansi --delimiter=: --no-multi --interactive --preview='bat --color=always --style=numbers {1}' --cmd 'rg \"{}\" --hidden --glob=\"!.git/\" --glob=\"!rusty-tags.vi\" --color=always --line-number' | cut -f1,2 -d':' | sed 's/:/ \+/g' | xargs -I{} sh -c '</dev/tty $EDITOR {}'"
+alias skrg="sk \
+              --ansi \
+              --delimiter=: \
+              --no-multi \
+              --interactive \
+              --preview='bat --color=always --style=numbers {1}' \
+              --cmd 'rg \"{}\" \
+              --hidden \
+              --glob=\"!.git/\" --glob=\"!rusty-tags.vi\" \
+              --color=always \
+              --line-number' \
+              | cut -f1,2 -d':' \
+              | sed 's/:/ \+/g' \
+              | xargs -I{} sh -c '</dev/tty $EDITOR {}'"
 
 if ls --color > /dev/null 2>&1; then # GNU `ls`
   colorflag="--color"
@@ -19,6 +32,22 @@ alias  .....="cd ../../../.."
 alias ......="cd ../../../../.."
 
 alias mc="TERM=tmux-256color mc"
+
+alias warc='wget --page-requisites --convert-links --adjust-extension --compression=auto --reject-regex=\"/search\|/rss\" --no-if-modified-since --no-check-certificate --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"'
+
+warcpage() {
+  pushd
+  cd $HOME/mkvch/warc
+  warc "$1"
+  popd
+}
+
+warcsite() {
+  pushd
+  cd $HOME/mkvch/warc
+  warc --mirror "$1"
+  popd
+}
 
 # Usage: codi [filetype] [filename]
 codi() {
