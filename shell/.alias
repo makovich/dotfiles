@@ -22,8 +22,7 @@ else # macOS `ls`
   colorflag="-G"
 fi
 
-alias ls="ls -alFh ${colorflag}"
-alias l=ls
+alias l="ls -alFh ${colorflag}"
 
 alias     ..="cd .."
 alias    ...="cd ../.."
