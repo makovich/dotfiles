@@ -1,4 +1,5 @@
 alias v=$EDITOR
+alias b=bat
 alias br=broot
 alias cls=clear
 alias skrg="sk \
@@ -33,7 +34,15 @@ alias ......="cd ../../../../.."
 # mark off "use internal viewer" in the mc configuration
 alias mc="TERM=tmux-256color BAT_PAGER='less -R' PAGER=bat mc"
 
-alias warc='wget --page-requisites --convert-links --adjust-extension --compression=auto --reject-regex=\"/search\|/rss\" --no-if-modified-since --no-check-certificate --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"'
+alias warc='wget \
+              --page-requisites \
+              --convert-links \
+              --adjust-extension \
+              --compression=auto \
+              --reject-regex=\"/search\|/rss\" \
+              --no-if-modified-since \
+              --no-check-certificate \
+              --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36"'
 
 warcpage() {
   pushd
