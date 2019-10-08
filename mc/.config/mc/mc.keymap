@@ -1,13 +1,19 @@
 [main]
-Find = alt-slash; alt-question; f55
+Find = alt-f7; f55; ctrl-f
+Quit = alt-x; f10
 
 [panel]
-Left = 
-Right = 
-Top = alt-lt; home; left
-Bottom = alt-gt; end; right
-CdParent = ctrl-pgup; backspace
+Up = up; k
+Down = down; j
+Left =
+Right =
+Top = alt-lt; home; left; h; K
+Bottom = alt-gt; end; right; l; J
+PageUp = pgup; ctrl-u
+PageDown = pgdn; ctrl-d
+CdParent = ctrl-pgup; backspace; H
+Enter = enter; L
 
 MarkDown = space
 
-Search = als-s
+Search = alt-slash; alt-s; ctrl-s
