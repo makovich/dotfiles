@@ -391,6 +391,15 @@ augroup Goyo
   au User GoyoLeave nested call <SID>goyo_leave()
 augroup END
 
+" Codi
+let g:codi#interpreters = {
+      \ 'javascript': {
+      \   'bin': 'qjs',
+      \   'prompt': '^\(qjs >\|{\+  \.\.\.\) ',
+      \   'quitcmd': '\q',
+      \   'rightalign': 0,
+      \ }}
+
 " grep with ripgrep
 if executable('rg')
   set grepprg=rg\ --vimgrep\ --color=never
