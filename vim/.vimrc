@@ -334,7 +334,7 @@ augroup Rust
   au FileType rust nmap K <plug>(ale_hover)
 augroup END
 
-" VSCode-like comment
+" VSCode-like comment (Ctrl+/)
 nmap <C-_> :Commentary<CR>
 vmap <C-_> :Commentary<CR>
 imap <C-_> <Esc>:Commentary<CR>i
