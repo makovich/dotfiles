@@ -20,7 +20,7 @@ Plug 'lyokha/vim-xkbswitch'
 
 Plug 'jiangmiao/auto-pairs'
 Plug 'tpope/vim-surround'                       " yssb, ysiw{, cs(', ds[, cs'<q>, cst'
-Plug 'wellle/targets.vim'                       " Pair (ci(, da[, dinb), Separator (i., A;), Argument (cia, daa), Quote (cib, di', cinq), Tag (it)
+" Plug 'wellle/targets.vim'                       " Pair (ci(, da[, dinb), Separator (i., A;), Argument (cia, daa), Quote (cib, di', cinq), Tag (it)
 Plug 'justinmk/vim-sneak'                       " f-motion on steroids
 
 Plug 'junegunn/fzf'
@@ -235,10 +235,9 @@ augroup VimTune
 
   " Quickview open & move through matches
   au FileType qf nmap <buffer> <silent> p <CR><C-w>p
-  au FileType qf nmap <buffer> <silent> J j<CR><C-w>p
-  au FileType qf nmap <buffer> <silent> K k<CR><C-w>p
-  au FileType qf nmap <buffer> <silent> <C-N> j<CR><C-w>p
-  au FileType qf nmap <buffer> <silent> <C-P> k<CR><C-w>p
+  au FileType qf nmap <buffer> <silent> <C-J> j<CR><C-w>p
+  au FileType qf nmap <buffer> <silent> <C-K> k<CR><C-w>p
+  au FileType qf nmap <buffer> <silent> <Leader>F :cclose<CR>:normal! `O<CR>
 
   au FileType GV nmap <buffer> <silent> J jo
   au FileType GV nmap <buffer> <silent> K ko
@@ -418,33 +417,27 @@ if executable('rg')
 "   let g:ctrlp_use_caching = 0
 endif
 
-" Find in files for the word under the cursor in the current directory
-" nmap \f mO:call AckRun(expand('<cword>'))<CR>
-" FIXME: vim-grepper has to make shellescape(a:txt, 1)
-" or swith to grepper
-nmap <Leader>g mO:Rg <cword><CR>
-nmap <Leader>G :cclose<CR>:'O<CR>
-
 " fzf
 let g:fzf_command_prefix = 'FZF'
 let g:fzf_layout = { 'down': '15' }
 let g:fzf_mru_exclude = '.*fugitiveblame'
 
 nmap <C-P> :Fls<CR>
-nmap <Leader>p :FZFMru<CR>
 nmap <Leader>f :Rgp!<CR>
-nmap <Leader>F :Fls! ~/
+nmap <Leader>F mO:Rg <cword><CR>
+nmap <Leader>p :FZFMru<CR>
 nmap <Leader>o :Outline!<CR>
 
 command! -bang -nargs=? -complete=dir Rgp
     \ call fzf#run(fzf#wrap('GrepPreview', {
     \     'source': 'rg --hidden --line-number --glob "!.git/" --glob "!rusty-tags.vi"' . ( len(<q-args>) == 0 ? " ." : " . " . shellescape(<q-args>) ),
     \     'sink': function('GoToLine', [':']),
-    \     'options': ['--layout=reverse',
+    \     'options': ['--query=' . expand("<cword>"),
+    \                 '--layout=reverse',
     \                 '--delimiter=:', '--nth=3',
     \                 '--color=16', '--inline-info', '--prompt=Rg> ',
     \                 '--cycle', '--bind=alt-h:toggle-preview',
-    \                 '--preview-window=right:65%:hidden',
+    \                 '--preview-window=right:65%',
     \                 '--preview=bat --style=numbers --color=always --line-range={2}: {1}'] },
     \   <bang>0))
 
@@ -518,7 +511,7 @@ map ? <Plug>(incsearch-backward)
 
 " Tags navigation
 nmap <M-]> mO:exec "ltag " . expand("<cword>")<CR><C-t>:lopen<CR>
-nmap <M-t> :lclose<CR>:silent! exec '20pop'<CR>:'O<CR>
+nmap <M-t> :lclose<CR>:silent! exec '20pop'<CR>:normal! `O<CR>
 nmap <Leader>t <M-]>
 nmap <Leader>T <M-t>
 
