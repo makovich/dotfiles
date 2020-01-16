@@ -84,16 +84,18 @@ autoload -U up-line-or-beginning-search
 zle -N up-line-or-beginning-search
 bindkey "^[[A" up-line-or-beginning-search
 bindkey "^[OA" up-line-or-beginning-search
-bindkey -M vicmd "j" up-line-or-beginning-search
+bindkey -M vicmd "k" up-line-or-beginning-search
 
 autoload -U down-line-or-beginning-search
 zle -N down-line-or-beginning-search
 bindkey "^[[B" down-line-or-beginning-search
 bindkey "^[OB" down-line-or-beginning-search
-bindkey -M vicmd "k" down-line-or-beginning-search
+bindkey -M vicmd "j" down-line-or-beginning-search
 
 # Repeat last command
 bindkey -M vicmd -s '.' '^P^M'
+bindkey -M vicmd -s "^K" "^P^M"
+bindkey -s "^K" "^[[A^M"
 
 # Completions
 autoload -Uz compinit
