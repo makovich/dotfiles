@@ -161,6 +161,7 @@ set noshowmode
 set nowrap
 set number
 set scrolloff=15
+set selection=old
 set shiftwidth=2
 set shortmess+=c
 set showbreak=
@@ -169,6 +170,8 @@ set signcolumn=yes
 set softtabstop=2
 set tabstop=2
 set textwidth=0
+set undodir=~/.vim/undodir
+set undofile
 set updatetime=300
 set visualbell t_vb=
 
