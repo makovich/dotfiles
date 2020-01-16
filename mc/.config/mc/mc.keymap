@@ -7,12 +7,12 @@ Up = up; k
 Down = down; j
 Left =
 Right =
-Top = alt-lt; home; left; h; K
-Bottom = alt-gt; end; right; l; J
-PageUp = pgup; ctrl-u
-PageDown = pgdn; ctrl-d
-CdParent = ctrl-pgup; backspace; H
-Enter = enter; L
+Top = alt-lt; home; left; h
+Bottom = alt-gt; end; right; l
+PageUp = pgup; ctrl-u; K
+PageDown = pgdn; ctrl-d; J
+CdParent = ctrl-pgup; backspace; ctrl-k
+Enter = enter; ctrl-j
 
 MarkDown = space
 
