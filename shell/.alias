@@ -2,6 +2,7 @@ alias v=$EDITOR
 alias b=bat
 alias br=broot
 alias cls=clear
+alias rg=_rg
 alias skrg="sk \
               --ansi \
               --delimiter=: \
@@ -70,6 +71,14 @@ codi() {
     hi VertSplit ctermbg=NONE |\
     hi NonText ctermfg=0 |\
     Codi $syntax" "$@"
+}
+
+_rg() {
+  if [[ $# -gt 0 ]]; then
+    $HOME/.cargo/bin/rg "$@"
+  else
+    skrg
+  fi
 }
 
 code() {
