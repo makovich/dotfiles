@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# crontab -u user -e
+# @daily $HOME/bin/update-hosts-blacklists
+#
+# must be run from user's home directory
+cd
+wget -N https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt
+wget -N https://raw.githubusercontent.com/notracking/hosts-blocklists/master/domains.txt
+
+# /usr/bin/pkill -HUP dnsmasq
+brew services restart dnsmasq

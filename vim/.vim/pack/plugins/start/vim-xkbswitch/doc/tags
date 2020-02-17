@@ -1,0 +1,15 @@
+xkbswitch	xkbswitch.txt	/*xkbswitch*
+xkbswitch-about	xkbswitch.txt	/*xkbswitch-about*
+xkbswitch-assist-nkeymap	xkbswitch.txt	/*xkbswitch-assist-nkeymap*
+xkbswitch-changes	xkbswitch.txt	/*xkbswitch-changes*
+xkbswitch-conf-basic	xkbswitch.txt	/*xkbswitch-conf-basic*
+xkbswitch-configure	xkbswitch.txt	/*xkbswitch-configure*
+xkbswitch-contents	xkbswitch.txt	/*xkbswitch-contents*
+xkbswitch-default-layouts	xkbswitch.txt	/*xkbswitch-default-layouts*
+xkbswitch-features	xkbswitch.txt	/*xkbswitch-features*
+xkbswitch-filetype-disable	xkbswitch.txt	/*xkbswitch-filetype-disable*
+xkbswitch-issues	xkbswitch.txt	/*xkbswitch-issues*
+xkbswitch-plugins	xkbswitch.txt	/*xkbswitch-plugins*
+xkbswitch-runtime-enable	xkbswitch.txt	/*xkbswitch-runtime-enable*
+xkbswitch-setup	xkbswitch.txt	/*xkbswitch-setup*
+xkbswitch.txt	xkbswitch.txt	/*xkbswitch.txt*

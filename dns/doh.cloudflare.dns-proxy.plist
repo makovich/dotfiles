@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>doh.https_dns_proxy</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/usr/local/bin/https_dns_proxy</string>
+      <string>-b</string>
+      <string>1.1.1.1,1.0.0.1</string>
+      <string>-r</string>
+      <string>https://cloudflare-dns.com/dns-query?ct=application/dns-json&</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+  </dict>
+</plist>
