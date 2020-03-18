@@ -506,6 +506,7 @@ nmap <M-]> mO:exec "ltag " . expand("<cword>")<CR><C-t>:lopen<CR>
 nmap <M-t> :lclose<CR>:silent! exec '20pop'<CR>:normal! `O<CR>
 nmap <Leader>t <M-]>
 nmap <Leader>T <M-t>
+nmap gt :pop<CR>
 
 " vim-lsp
 augroup Lsp
