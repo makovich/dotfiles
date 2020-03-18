@@ -35,6 +35,14 @@ alias ......="cd ../../../../.."
 # mark off "use internal viewer" in the mc configuration
 alias mc="TERM=tmux-256color BAT_PAGER='less -R' PAGER=bat mc"
 
+mem() {
+  local note
+  pushd $HOME/mkvch
+  note=$(sk)
+  $EDITOR ${note:-"+Scratch"}
+  popd
+}
+
 _warc() {
   wget \
     --page-requisites \
