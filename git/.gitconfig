@@ -3,11 +3,24 @@
     email = paul@makovi.ch
 
 [alias]
-    br = branch
-    cc = commit --all --message
-    ch = checkout
-    am = commit --amend
+    a  = add
+    s = status
+    b = branch --all -v
+    c = commit --all --message
+    co = checkout
+    ca = commit --amend
+    lg = log --all --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
     ls-subtrees = !"git log | grep git-subtree-dir | awk '{ print $2 }'"
+
+# Exploring history:
+# - git branch --all --verbose
+# - git rev-list --count origin/master
+# - git rev-list --count --no-merges origin/master
+# - git for-each-ref --sort=-committerdate refs/remotes/ --shell --format=’%(refname:short)’ | xargs -I REF sh -c 'printf "%-30s %10s %10s\n" "REF" `git rev-list --count REF` `git rev-list --count --no-merges REF`'
+# - git for-each-ref --sort=-committerdate refs/remotes --format='%(align:35)%(refname:short)%(end) %(committerdate:short) %(align:20)%(authorname)%(end) %(objectname:short)'
+# - git shortlog -sn [--no-merges] | cat
+# - git log --pretty=format: --name-only | sort | uniq -c | sort -r | head -30
+
 [core]
     pager = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight | less
 
