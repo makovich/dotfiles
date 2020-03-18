@@ -1,8 +1,23 @@
 alias v=$EDITOR
-alias b=bat
+
+[ -x "$(command -v bat)" ] && alias c="bat" || alias c="cat"
+
+if ls --color >/dev/null 2>&1; then # GNU `ls`
+  colorflag="--color"
+else # macOS `ls`
+  colorflag="-G"
+fi
+alias l="ls -alFh ${colorflag}"
+
+alias g=git
+alias     ..="cd .."
+alias    ...="cd ../.."
+alias   ....="cd ../../.."
+alias  .....="cd ../../../.."
+alias ......="cd ../../../../.."
+
 alias br=broot
 alias cls=clear
-alias rg=_rg
 alias skrg="sk \
               --ansi \
               --delimiter=: \
@@ -17,20 +32,6 @@ alias skrg="sk \
               | cut -f1,2 -d':' \
               | sed 's/:/ \+/g' \
               | xargs -I{} sh -c '</dev/tty $EDITOR {}'"
-
-if ls --color > /dev/null 2>&1; then # GNU `ls`
-  colorflag="--color"
-else # macOS `ls`
-  colorflag="-G"
-fi
-
-alias l="ls -alFh ${colorflag}"
-
-alias     ..="cd .."
-alias    ...="cd ../.."
-alias   ....="cd ../../.."
-alias  .....="cd ../../../.."
-alias ......="cd ../../../../.."
 
 # mark off "use internal viewer" in the mc configuration
 alias mc="TERM=tmux-256color BAT_PAGER='less -R' PAGER=bat mc"
@@ -65,7 +66,7 @@ _warc() {
     --no-if-modified-since \
     --no-check-certificate \
     --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36" \
-    $1
+    $@
 }
 
 warc() {
@@ -78,7 +79,7 @@ warc() {
 warcs() {
   pushd
   cd $HOME/mkvch/warc
-  _warc --mirror "$1"
+  _warc --mirror $@
   popd
 }
 
@@ -96,8 +97,8 @@ codi() {
     Codi $syntax" "$@"
 }
 
-_rg() {
-  if [[ $# -gt 0 ]]; then
+rg() {
+  if [ $# -gt 0 ]; then
     $HOME/.cargo/bin/rg "$@"
   else
     skrg
@@ -105,7 +106,7 @@ _rg() {
 }
 
 code() {
-  if [[ $# -gt 0 ]] && test -d "$HOME/code/$*"; then
+  if [ $# -gt 0 ] && test -d "$HOME/code/$*"; then
     pushd && cd $HOME/code/$*
   else
     pushd && cd $HOME/code/$(fd . $HOME/code --max-depth 1 --type d --follow | cut -d/ -f5- | sk --no-multi --query "$*")
@@ -113,7 +114,7 @@ code() {
 }
 
 tm() {
-  [[ -n "$TMUX" ]] && change="switch-client" || change="attach-session"
+  [ -n "$TMUX" ] && change="switch-client" || change="attach-session"
   if [ $1 ]; then
     tmux $change -t "$1" 2>/dev/null || (tmux new-session -d -s $1 && tmux $change -t "$1"); return
   fi
@@ -130,7 +131,7 @@ ff() {
   sep='{::}'
   ff_db_file="$(/bin/ls -d1u $HOME/*.ff/ | head -1)places.sqlite"
   tmp=$(mktemp)
-  if [[ $# -gt 0 ]]; then
+  if [ $# -gt 0 ]; then
     query="select substr(title, 1, $cols), min(url) from moz_places group by title order by last_visit_date desc"
   else
     query="select substr(b.title, 1, $cols), p.url from moz_bookmarks as b left join moz_places as p on b.fk=p.id where b.type=1 order by p.last_visit_date desc"
