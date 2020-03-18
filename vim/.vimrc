@@ -48,6 +48,7 @@ function! LightlineFilename()
   return fname ==# 'ControlP' && has_key(g:lightline, 'ctrlp_item') ? g:lightline.ctrlp_item :
         \ fname =~# '__Tagbar__' ? g:lightline.fname :
         \ fname =~# '__Gundo\|NERD_tree' ? '' :
+        \ fname =~# '__Scratch__' ? '[Notes]' :
         \ &buftype ==# 'quickfix' ? '' :
         \ fname ==# '[Plugins]' ? '' :
         \ &filetype ==# 'vimfiler' ? vimfiler#get_status_string() :
@@ -127,13 +128,16 @@ vnoremap Q :norm @q<cr>
 nnoremap ' `
 
 " Previous buffer
-nmap <Leader><Space> :e#<CR>
+nmap <Leader>; :e#<CR>
+
+" scratch.vim
+nmap <Leader><Space> :Scratch<CR>
 
 " Close the buffer, don't close the window (bufkill.vim)
 nmap <Leader>Q :BD<CR>
 
 " Space-q close the window
-nmap <Leader>q <C-w><C-q>
+nmap <Leader>q :q!<CR>
 
 " Zoom (or only one opened window)
 nmap <Leader>z <C-w>o
