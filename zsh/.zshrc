@@ -3,11 +3,9 @@ source ~/.zsh/fsh/fast-syntax-highlighting.plugin.zsh
 
 # Prompt
 # setopt prompt_subst
-PROMPT="%(1j.%(?.%B%K{2}%F{16}.%B%K{1}%F{16}).%(?.%F{2}.%F{1}))%(!.#.$)%k%f%b "
+psvar[1]=${SSH_CONNECTION:-}
+PROMPT="%(1V.%M .)%(1j.%(?.%B%K{2}%F{16}.%B%K{1}%F{16}).%(?.%F{2}.%F{1}))%(!.#.$)%k%f%b "
 RPROMPT="%F{242}%~%f %B%K{242}%F{232} %n@%m %f%k%b"
-
-# Node Version Manager
-# source "$NVM_DIR/nvm.sh"
 
 zle-keymap-select() {
   if [[ ${KEYMAP} == vicmd ]]; then
@@ -28,12 +26,6 @@ zle -N zle-line-init
 # Share commands history between shell instances
 setopt share_history
 
-# Record commands only after shell's exit
-# setopt append_history
-
-# change dir without cd
-setopt autocd
-
 # Record command every time
 setopt inc_append_history
 
@@ -46,7 +38,6 @@ stty -ixon
 
 # Vi
 bindkey -v
-bindkey -M vicmd "jj" vi-insert           # right arm and same as in .vimrc
 
 # Edit in $EDITOR
 autoload -Uz edit-command-line
@@ -56,10 +47,6 @@ bindkey -M vicmd "v" edit-command-line
 # Freeing vi-mode forward/reverse history search
 bindkey -r "^[/"
 bindkey -r "^[,"
-
-# Minimal's magic enter only for vicmd mode
-# bindkey -M vicmd "^M" buffer-empty
-# bindkey -M main "^M" accept-line
 
 # Emacs
 bindkey "^A" beginning-of-line
@@ -97,12 +84,11 @@ bindkey -M vicmd -s '.' '^P^M'
 bindkey -M vicmd -s "^K" "^P^M"
 bindkey -s "^K" "^[[A^M"
 
-# Completions
-autoload -Uz compinit
-compinit -i
-
 # Do show hidden files
 setopt globdots
+
+# Display items after <tab> and reprint prompt after them
+unsetopt always_last_prompt
 
 # Allow to add few more symbols to type before inserting the first match
 unsetopt menu_complete
@@ -116,9 +102,6 @@ unsetopt list_beep
 # More columns
 setopt list_packed
 
-# Display items from left to right
-setopt list_rows_first
-
 # Disable start/stop characters in shell editor
 unsetopt flowcontrol
 
@@ -129,11 +112,15 @@ setopt complete_in_word
 # Move cursor to the end of a completed word
 setopt always_to_end
 
+# Completions
+# autoload -Uz compinit
+# compinit -i
+
 # Display menu
-zstyle ':completion:*:*:*:*:*' menu
+# zstyle ':completion:*:*:*:*:*' menu
 
 # Default to file completion
-zstyle ':completion:*' completer _files _complete # _expand _complete _files # _correct _approximate
+# zstyle ':completion:*' completer _files _complete # _expand _complete _files # _correct _approximate
 
 # Default colors
 # via https://stackoverflow.com/a/16149200
