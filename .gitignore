@@ -1,3 +1,4 @@
-tmux/.tmux/.tmux_resurrect
 vim/.vim/.netrwhist
 vim/.vim/.undodir
+secrets
+tags
