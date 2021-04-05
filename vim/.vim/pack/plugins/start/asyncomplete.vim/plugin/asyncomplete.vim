@@ -13,11 +13,13 @@ endif
 let g:asyncomplete_manager = get(g:, 'asyncomplete_manager', 'asyncomplete#managers#vim#init')
 let g:asyncomplete_change_manager = get(g:, 'asyncomplete_change_manager', ['asyncomplete#utils#_on_change#textchangedp#init', 'asyncomplete#utils#_on_change#timer#init'])
 let g:asyncomplete_triggers = get(g:, 'asyncomplete_triggers', {'*': ['.', '>', ':'] })
+let g:asyncomplete_min_chars = get(g:, 'asyncomplete_min_chars', 1)
 
 let g:asyncomplete_auto_completeopt = get(g:, 'asyncomplete_auto_completeopt', 1)
 let g:asyncomplete_auto_popup = get(g:, 'asyncomplete_auto_popup', 1)
 let g:asyncomplete_popup_delay = get(g:, 'asyncomplete_popup_delay', 30)
 let g:asyncomplete_log_file = get(g:, 'asyncomplete_log_file', '')
 let g:asyncomplete_preprocessor = get(g:, 'asyncomplete_preprocessor', [])
+let g:asyncomplete_matchfuzzy = get(g:, 'asyncomplete_matchfuzzy', exists('*matchfuzzypos'))
 
 inoremap <silent> <expr> <Plug>(asyncomplete_force_refresh) asyncomplete#force_refresh()

@@ -1,5 +1,5 @@
+import json
 from deoplete.source.base import Base
-
 
 class Source(Base):
     def __init__(self, vim):
@@ -13,26 +13,5 @@ class Source(Base):
         self.vars = {}
 
     def gather_candidates(self, context):
-        config = self.vim.vars['vsnip_integ_config']
-        if config and config['deoplete']:
-            return self.to_candidates(self.vim.call('vsnip#source#find', context['filetype']))
-        return []
-
-    def to_candidates(self, sources):
-        candidates = []
-
-        for source in sources:
-            for snippet in source:
-                for prefix in snippet['prefix']:
-                    candidate = {
-                        'word': prefix,
-                        'abbr': prefix,
-                        'menu': 'Snippet',
-                        'info': snippet['label']
-                    }
-                    if 'description' in snippet and len(snippet['description']) > 0:
-                        candidate['info'] += ': {}'.format(snippet['description'])
-                    candidates.append(candidate)
-
-        return candidates
+        return self.vim.call('vsnip#get_complete_items', context['bufnr'])
 

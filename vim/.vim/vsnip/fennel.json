@@ -1,0 +1,41 @@
+{
+  "fn": {
+    "prefix": "fn",
+    "body": [
+      "(fn ${1:name} [${2:args}]",
+        "  $0)"
+    ],
+    "description": ""
+  },
+
+  "let": {
+    "prefix": "let",
+    "body": [
+      "(let [${1:name} ${2:(${3:val})}]$0)"
+    ],
+    "description": ""
+  },
+
+  "if": {
+    "prefix": "if",
+    "body": [
+      "(if (${1:name}) $0)"
+    ],
+    "description": ""
+  },
+
+  "print": {
+    "prefix": "prn",
+    "body": [
+      "(print $0)"
+    ],
+    "description": ""
+  },
+
+  "hashfn": {
+    "prefix": "#",
+    "body": [
+      "#(${1:name} ${2:\\$1} ${3:\\$2})$0"
+    ]
+  }
+}

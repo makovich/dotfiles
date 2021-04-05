@@ -1,9 +1,40 @@
+let s:has_lua = has('nvim-0.4.0') || (has('lua') && has('patch-8.2.0775'))
+function! lsp#utils#has_lua() abort
+    return s:has_lua
+endfunction
+
+let s:has_virtual_text = exists('*nvim_buf_set_virtual_text') && exists('*nvim_create_namespace')
+function! lsp#utils#_has_virtual_text() abort
+    return s:has_virtual_text
+endfunction
+
+let s:has_signs = exists('*sign_define') && (has('nvim') || has('patch-8.1.0772'))
+function! lsp#utils#_has_signs() abort
+    return s:has_signs
+endfunction
+
+let s:has_nvim_buf_highlight = exists('*nvim_buf_add_highlight')
+function! lsp#utils#_has_nvim_buf_highlight() abort
+    return s:has_nvim_buf_highlight
+endfunction
+
+" https://github.com/prabirshrestha/vim-lsp/issues/399#issuecomment-500585549
+let s:has_textprops = exists('*prop_add') && has('patch-8.1.1035')
+function! lsp#utils#_has_textprops() abort
+    return s:has_textprops
+endfunction
+
+let s:has_higlights = has('nvim') ? lsp#utils#_has_nvim_buf_highlight() : lsp#utils#_has_textprops()
+function! lsp#utils#_has_highlights() abort
+    return s:has_higlights
+endfunction
+
 function! lsp#utils#is_file_uri(uri) abort
     return stridx(a:uri, 'file:///') == 0
 endfunction
 
 function! lsp#utils#is_remote_uri(uri) abort
-    return a:uri =~# '^\w\+::' || a:uri =~# '^\w\+://'
+    return a:uri =~# '^\w\+::' || a:uri =~# '^[a-z][a-z0-9+.-]*://'
 endfunction
 
 function! s:decode_uri(uri) abort
@@ -40,10 +71,16 @@ function! s:encode_uri(path, start_pos_encode, default_prefix) abort
     return l:prefix . l:result
 endfunction
 
+let s:path_to_uri_cache = {}
 if has('win32') || has('win64')
     function! lsp#utils#path_to_uri(path) abort
-        if empty(a:path)
-            return a:path
+        if has_key(s:path_to_uri_cache, a:path)
+            return s:path_to_uri_cache[a:path]
+        endif
+
+        if empty(a:path) || lsp#utils#is_remote_uri(a:path)
+            let s:path_to_uri_cache[a:path] = a:path
+            return s:path_to_uri_cache[a:path]
         else
             " You must not encode the volume information on the path if
             " present
@@ -53,26 +90,57 @@ if has('win32') || has('win64')
                 let l:end_pos_volume = 0
             endif
 
-            return s:encode_uri(substitute(a:path, '\', '/', 'g'), l:end_pos_volume, 'file:///')
+            let s:path_to_uri_cache[a:path] = s:encode_uri(substitute(a:path, '\', '/', 'g'), l:end_pos_volume, 'file:///')
+            return s:path_to_uri_cache[a:path]
         endif
     endfunction
 else
     function! lsp#utils#path_to_uri(path) abort
-        if empty(a:path)
-            return a:path
+        if has_key(s:path_to_uri_cache, a:path)
+            return s:path_to_uri_cache[a:path]
+        endif
+
+        if empty(a:path) || lsp#utils#is_remote_uri(a:path)
+            let s:path_to_uri_cache[a:path] = a:path
+            return s:path_to_uri_cache[a:path]
         else
-            return s:encode_uri(a:path, 0, 'file://')
+            let s:path_to_uri_cache[a:path] = s:encode_uri(a:path, 0, 'file://')
+            return s:path_to_uri_cache[a:path]
         endif
     endfunction
 endif
 
+let s:uri_to_path_cache = {}
 if has('win32') || has('win64')
     function! lsp#utils#uri_to_path(uri) abort
-        return substitute(s:decode_uri(a:uri[len('file:///'):]), '/', '\\', 'g')
+        if has_key(s:uri_to_path_cache, a:uri)
+            return s:uri_to_path_cache[a:uri]
+        endif
+
+        let s:uri_to_path_cache[a:uri] = substitute(s:decode_uri(a:uri[len('file:///'):]), '/', '\\', 'g')
+        return s:uri_to_path_cache[a:uri]
     endfunction
 else
     function! lsp#utils#uri_to_path(uri) abort
-        return s:decode_uri(a:uri[len('file://'):])
+        if has_key(s:uri_to_path_cache, a:uri)
+            return s:uri_to_path_cache[a:uri]
+        endif
+
+        let s:uri_to_path_cache[a:uri] = s:decode_uri(a:uri[len('file://'):])
+        return s:uri_to_path_cache[a:uri]
+    endfunction
+endif
+
+if has('win32') || has('win64')
+    function! lsp#utils#normalize_uri(uri) abort
+        " Refer to https://github.com/microsoft/language-server-protocol/pull/1019 on normalization of urls.
+        " TODO: after the discussion is settled, modify this function.
+        let l:ret = substitute(a:uri, '^file:///[a-zA-Z]\zs%3[aA]', ':', '')
+        return substitute(l:ret, '^file:///\zs\([A-Z]\)', "\\=tolower(submatch(1))", '')
+    endfunction
+else
+    function! lsp#utils#normalize_uri(uri) abort
+        return a:uri
     endfunction
 endif
 
@@ -110,6 +178,28 @@ function! lsp#utils#find_nearest_parent_file(path, filename) abort
     endif
 endfunction
 
+function! lsp#utils#_compare_nearest_path(matches, lhs, rhs) abort
+  let l:llhs = len(a:lhs)
+  let l:lrhs = len(a:rhs)
+  if l:llhs ># l:lrhs
+    return -1
+  elseif l:llhs <# l:lrhs
+    return 1
+  endif
+  if a:matches[a:lhs] ># a:matches[a:rhs]
+    return -1
+  elseif a:matches[a:lhs] <# a:matches[a:rhs]
+    return 1
+  endif
+  return 0
+endfunction
+
+function! lsp#utils#_nearest_path(matches) abort
+  return empty(a:matches) ?
+              \ '' :
+              \ sort(keys(a:matches), function('lsp#utils#_compare_nearest_path', [a:matches]))[0]
+endfunction
+
 " Find a nearest to a `path` parent filename `filename` by traversing the filesystem upwards
 " The filename ending with '/' or '\' will be regarded as directory name,
 " otherwith as file name
@@ -127,10 +217,8 @@ function! lsp#utils#find_nearest_parent_file_directory(path, filename) abort
                 endif
             endif
         endfor
-        return empty(l:matched_paths) ?
-                    \ '' :
-                    \ keys(l:matched_paths)[index(values(l:matched_paths), max(values(l:matched_paths)))]
 
+        return lsp#utils#_nearest_path(l:matched_paths)
     elseif type(a:filename) == 1
         if a:filename[-1:] ==# '/' || a:filename[-1:] ==# '\'
             let l:modify_str = ':p:h:h'
@@ -313,14 +401,68 @@ function! lsp#utils#base64_decode(data) abort
 endfunction
 
 function! lsp#utils#make_valid_word(str) abort
-   let l:str = matchstr(a:str, '^[^ (<{\[\t\r\n]\+')
-   if l:str =~# ':$'
-     return l:str[:-2]
+   let l:str = substitute(a:str, '\$[0-9]\+\|\${\%(\\.\|[^}]\)\+}', '', 'g')
+   let l:str = substitute(l:str, '\\\(.\)', '\1', 'g')
+   let l:valid = matchstr(l:str, '^[^"'' (<{\[\t\r\n]\+')
+   if empty(l:valid)
+       return l:str
    endif
-   return l:str
+   if l:valid =~# ':$'
+       return l:valid[:-2]
+   endif
+   return l:valid
 endfunction
 
 function! lsp#utils#_split_by_eol(text) abort
     return split(a:text, '\r\n\|\r\|\n', v:true)
 endfunction
 
+" parse command options like "-key" or "-key=value"
+function! lsp#utils#parse_command_options(params) abort
+    let l:result = {}
+    for l:param in a:params
+        let l:match = matchlist(l:param, '-\{1,2}\zs\([^=]*\)\(=\(.*\)\)\?\m')
+        let l:result[l:match[1]] = l:match[3]
+    endfor
+    return l:result
+endfunction
+
+" polyfill for the neovim wait function
+if exists('*wait')
+    function! lsp#utils#_wait(timeout, condition, ...) abort
+        if type(a:timeout) != type(0)
+            return -3
+        endif
+        if type(get(a:000, 0, 0)) != type(0)
+            return -3
+        endif
+        while 1
+            let l:result=call('wait', extend([a:timeout, a:condition], a:000))
+            if l:result != -3 " ignore spurious errors
+                return l:result
+            endif
+        endwhile
+    endfunction
+else
+    function! lsp#utils#_wait(timeout, condition, ...) abort
+        try
+            let l:timeout = a:timeout / 1000.0
+            let l:interval = get(a:000, 0, 200)
+            let l:Condition = a:condition
+            if type(l:Condition) != type(function('eval'))
+                let l:Condition = function('eval', l:Condition)
+            endif
+            let l:start = reltime()
+            while l:timeout < 0 || reltimefloat(reltime(l:start)) < l:timeout
+                if l:Condition()
+                    return 0
+                endif
+
+                execute 'sleep ' . l:interval . 'm'
+            endwhile
+            return -1
+        catch /^Vim:Interrupt$/
+            return -2
+        endtry
+    endfunction
+endif

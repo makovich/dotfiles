@@ -49,8 +49,8 @@ function! lsp#utils#buffer#_open_lsp_location(location) abort
     let l:path = lsp#utils#uri_to_path(a:location['uri'])
     let l:bufnr = bufnr(l:path)
 
-    let [l:start_line, l:start_col] = lsp#utils#position#_lsp_to_vim(l:bufnr, a:location['range']['start'])
-    let [l:end_line, l:end_col] = lsp#utils#position#_lsp_to_vim(l:bufnr, a:location['range']['end'])
+    let [l:start_line, l:start_col] = lsp#utils#position#lsp_to_vim(l:bufnr, a:location['range']['start'])
+    let [l:end_line, l:end_col] = lsp#utils#position#lsp_to_vim(l:bufnr, a:location['range']['end'])
 
     normal! m'
     if &modified && !&hidden
@@ -63,4 +63,12 @@ function! lsp#utils#buffer#_open_lsp_location(location) abort
     normal! V
     call setpos("'<", [l:bufnr, l:start_line, l:start_col])
     call setpos("'>", [l:bufnr, l:end_line, l:end_col])
+endfunction
+
+function! lsp#utils#buffer#get_indent_size(bufnr) abort
+    let l:shiftwidth = getbufvar(a:bufnr, '&shiftwidth')
+    if getbufvar(a:bufnr, '&shiftwidth')
+        return l:shiftwidth
+    endif
+    return getbufvar(a:bufnr, '&tabstop')
 endfunction

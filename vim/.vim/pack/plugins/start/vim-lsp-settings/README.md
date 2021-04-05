@@ -1,31 +1,26 @@
 # vim-lsp-settings
 
 [![Actions Status](https://github.com/mattn/vim-lsp-settings/workflows/reviewdog/badge.svg)](https://github.com/mattn/vim-lsp-settings/actions)
-[![Actions Status](https://github.com/mattn/vim-lsp-settings/workflows/linux_vim/badge.svg)](https://github.com/mattn/vim-lsp-settings/actions)
-[![Actions Status](https://github.com/mattn/vim-lsp-settings/workflows/linux_neovim/badge.svg)](https://github.com/mattn/vim-lsp-settings/actions)
-[![Actions Status](https://github.com/mattn/vim-lsp-settings/workflows/windows_vim/badge.svg)](https://github.com/mattn/vim-lsp-settings/actions)
-[![Actions Status](https://github.com/mattn/vim-lsp-settings/workflows/windows_neovim/badge.svg)](https://github.com/mattn/vim-lsp-settings/actions)
-[![Actions Status](https://github.com/mattn/vim-lsp-settings/workflows/mac_neovim/badge.svg)](https://github.com/mattn/vim-lsp-settings/actions)
+[![Actions Status](https://github.com/mattn/vim-lsp-settings/workflows/ci/badge.svg)](https://github.com/mattn/vim-lsp-settings/actions)
 
-Auto configurations for Language Server for [vim-lsp](https://github.com/prabirshrestha/vim-lsp)
+Auto configurations for Language Servers for [vim-lsp](https://github.com/prabirshrestha/vim-lsp).
 
 ## Introduction
 
-Language Servers is not easily to install. Visual Studio Code provide easy way to install/update Language Server and Language Server Client. This plugin provide same feature on Vim.
+Language Servers are not easy to install. Visual Studio Code provides easy ways to install and update Language Servers and Language Server Client. This plugin provides the same feature for Vim.
 
-## Installation instruction
+## Installation
 
-For [vim-plug](https://github.com/junegunn/vim-plug) plugin manager:
+Using the [vim-plug](https://github.com/junegunn/vim-plug) plugin manager:
 
 ```viml
-Plug 'prabirshrestha/async.vim'
 Plug 'prabirshrestha/vim-lsp'
 Plug 'mattn/vim-lsp-settings'
 ```
 
-You need to install both [vim-lsp](https://github.com/prabirshrestha/vim-lsp) and its accompanying plugins and vim-lsp-settings.
+You need to install both [vim-lsp](https://github.com/prabirshrestha/vim-lsp) and vim-lsp-settings.
 
-If you want to use autocompletion plugin, you can use followings.
+If you want to use auto-completion, you can use one of the following.
 
 #### asyncomplete.vim
 ```viml
@@ -39,88 +34,177 @@ Plug 'Shougo/deoplete.nvim'
 Plug 'lighttiger2505/deoplete-vim-lsp'
 ```
 
-### Notice
+### server store directory
 
-If you use plugin manager that is merging  plugins (ex. dein), Please setting stop merging work(ex. dein / merged = 0) or set `g:lsp_settings_servers_dir` option to a different directory from the vim-lsp's default.
+#### Windows
 
-_reason_:
+```
+%LOCALAPPDATA%\vim-lsp-settings\servers
+```
 
-Servers are installed in `./servers` directory at the caching area in default.
-But when rebuild the cache, any merging plugin manager erases old cached files(include `./servers` and server execute files) before install.
+#### MacOS/Linux
+
+```
+$HOME/.local/share/vim-lsp-settings/servers
+```
+
+If you define `$XDG_DATA_HOME`:
+
+```
+$XDG_DATA_HOME/vim-lsp-settings/servers
+```
+
 You can change the directory to install servers by set `g:lsp_settings_servers_dir` option in full path.
 
 ## Usage
+
 While editing a file with a supported filetype:
 
 ```
 :LspInstallServer
 ```
 
-Currently, no way to uninstall/update server. Run this command again, newer version will be installed.
+To uninstall server:
+
+```
+:LspUninstallServer server-name
+```
+
+Because there is no way to update a server, please run `:LspInstallServer` again, the newer version will be installed.
 
 ## Supported Languages
 
-| Language         | Language Server                                        | Local Install |
-|------------------|--------------------------------------------------------|:-------------:|
-| C/C++            | clangd                                                 | Yes           |
-| C#               | omnisharp                                              | Yes           |
-| Clojure          | clojure-lsp                                            | Yes           |
-| TypeScript       | typescript-language-server                             | Yes           |
-| JavaScript       | typescript-language-server                             | Yes           |
-| JavaScript       | javascript-typescript-stdio                            | Yes           |
-| Python           | pyls                                                   | Yes           |
-| Python           | pyls-ms (Microsoft Version)                            | Yes           |
-| Rust             | rls                                                    | No            |
-| Go               | gopls                                                  | Yes           |
-| Ruby             | solargraph                                             | Yes           |
-| PHP              | intelephense                                           | Yes           |
-| Java             | eclipse-jdt-ls                                         | Yes           |
-| Lua              | emmylua-ls                                             | Yes           |
-| Vim              | vim-language-server                                    | Yes           |
-| Bash             | bash-language-server                                   | Yes           |
-| Terraform        | terraform-lsp                                          | Yes           |
-| Dockerfile       | dockerfile-language-server-nodejs                      | Yes           |
-| YAML             | yaml-language-server                                   | Yes           |
-| XML              | lsp4xml                                                | Yes           |
-| Fortran          | fortls                                                 | Yes           |
-| Scala            | Metals                                                 | Yes           |
-| Elm              | elm-language-server                                    | Yes           |
-| JSON             | json-languageserver                                    | Yes           |
-| Swift            | sourcekit-lsp                                          | No            |
-| COBOL            | cobol-language-support                                 | Yes           |
-| Reason           | reason-language-server                                 | Yes           |
-| TeX              | texlab                                                 | Yes           |
-| TeX              | digestif                                               | No            |
-| Nim              | nimls                                                  | No            |
-| D                | dls                                                    | No            |
-| Elixir           | elixir-ls                                              | Yes           |
-| Groovy           | groovy-language-server                                 | Yes           |
-| Dart             | analysis-server-dart-snapshot                          | Yes           |
-| Erlang           | erlang-ls                                              | Yes           |
-| F#               | fsharp-language-server                                 | Yes           |
-| GraphQL          | gql-language-server                                    | Yes           |
-| Vue              | vue-language-server                                    | Yes           |
-| SQL              | sql-language-server                                    | Yes           |
-| Lisp             | cl-lsp                                                 | No            |
-| Kotlin           | kotlin-language-server                                 | Yes           |
-| R                | languageserver                                         | No            |
-| SystemVerilog    | svls                                                   | Yes           |
-| Apex/VisualForce | apex-jorje-lsp                                         | Yes           |
-| *                | efm-langserver                                         | Yes           |
+| Language         | Language Server                   | Installer | Local Install |
+|------------------|-----------------------------------|:---------:|:-------------:|
+| Apex/VisualForce | apex-jorje-lsp                    | Yes       | Yes           |
+| Bash             | bash-language-server              | Yes       | Yes           |
+| C#               | omnisharp                         | Yes       | Yes           |
+| C/C++            | clangd                            | Yes       | Yes           |
+| COBOL            | cobol-language-support            | Yes       | Yes           |
+| CSS              | css-languageserver                | Yes       | Yes           |
+| CSS              | tailwindcss-intellisense          | Yes       | Yes           |
+| Clojure          | clojure-lsp                       | Yes       | Yes           |
+| Clojure          | clj-kondo-lsp                     | Yes       | Yes           |
+| Cmake            | cmake-language-server             | Yes       | Yes           |
+| D                | dls                               | Yes       | No            |
+| D                | serve-d                           | Yes       | No            |
+| Dart             | analysis-server-dart-snapshot     | Yes       | Yes           |
+| Dockerfile       | dockerfile-language-server-nodejs | Yes       | Yes           |
+| Elixir           | elixir-ls                         | Yes       | Yes           |
+| Elm              | elm-language-server               | Yes       | Yes           |
+| Erlang           | erlang-ls                         | Yes       | Yes           |
+| F#               | fsharp-language-server            | Yes       | Yes           |
+| Fortran          | fortls                            | Yes       | Yes           |
+| Go               | gopls                             | Yes       | Yes           |
+| Go               | golangci-lint-langserver          | Yes       | Yes           |
+| GraphQL          | graphql-language-service-cli      | Yes       | Yes           |
+| GraphQL          | gql-language-server               | Yes       | Yes           |
+| Groovy           | groovy-language-server            | Yes       | Yes           |
+| Haskell          | haskell-ide-engine                | No        | No            |
+| Haskell          | haskell-language-server           | No        | No            |
+| HTML             | html-languageserver               | Yes       | Yes           |
+| HTML             | angular-language-server           | Yes       | Yes           |
+| HTML             | tailwindcss-intellisense          | Yes       | Yes           |
+| JSON             | json-languageserver               | Yes       | Yes           |
+| JSON             | rome                              | Yes       | Yes           |
+| Java             | eclipse-jdt-ls                    | Yes       | Yes           |
+| Java             | java-language-server              | No        | Yes           |
+| JavaScript       | typescript-language-server        | Yes       | Yes           |
+| JavaScript       | javascript-typescript-stdio       | Yes       | Yes           |
+| JavaScript       | rome                              | Yes       | Yes           |
+| JavaScript       | flow                              | Yes       | Yes           |
+| JavaScript       | eslint-language-server            | Yes       | Yes           |
+| Julia            | LanguageServer.jl                 | Yes       | No            |
+| Java             | java-language-server              | No        | No            |
+| Kotlin           | kotlin-language-server            | Yes       | Yes           |
+| Lisp             | cl-lsp                            | Yes       | No            |
+| Lua              | emmylua-ls                        | Yes       | Yes           |
+| Lua              | sumneko-lua-language-server       | Yes       | Yes           |
+| Nim              | nimls                             | No        | No            |
+| PHP              | intelephense                      | Yes       | Yes           |
+| PHP              | psalm-language-server             | Yes       | Yes           |
+| OCaml            | ocaml-lsp                         | UNIX Only | Yes           |
+| Python           | pyls-all (pyls with dependencies) | Yes       | Yes           |
+| Python           | pyls (pyls without dependencies)  | Yes       | Yes           |
+| Python           | pyls-ms (Microsoft Version)       | Yes       | Yes           |
+| Python           | jedi-language-server              | Yes       | Yes           |
+| Python           | pyright-langserver                | Yes       | Yes           |
+| Prisma           | prisma-language-server            | Yes       | Yes           |
+| R                | languageserver                    | Yes       | No            |
+| Racket           | racket-lsp                        | Yes       | No            |
+| Reason           | reason-language-server            | Yes       | Yes           |
+| Ruby             | solargraph                        | Yes       | Yes           |
+| Rust             | rls                               | Yes       | No            |
+| Rust             | rust-analyzer                     | Yes       | Yes           |
+| SQL              | sql-language-server               | Yes       | Yes           |
+| SQL              | sqls                              | Yes       | Yes           |
+| Scala            | Metals                            | Yes       | Yes           |
+| Svelte           | svelte-language-server            | Yes       | Yes           |
+| Swift            | sourcekit-lsp                     | Yes       | No            |
+| SystemVerilog    | svls                              | Yes       | Yes           |
+| TeX              | texlab                            | Yes       | Yes           |
+| TeX              | digestif                          | Yes       | No            |
+| Terraform        | terraform-lsp                     | Yes       | Yes           |
+| Terraform        | terraform-ls                      | Yes       | Yes           |
+| TTCN-3           | ntt                               | Yes       | Yes           |
+| TypeScript       | typescript-language-server        | Yes       | Yes           |
+| TypeScript       | deno                              | Yes       | Yes           |
+| TypeScript       | rome                              | Yes       | Yes           |
+| TypeScript       | eslint-language-server            | Yes       | Yes           |
+| Vim              | vim-language-server               | Yes       | Yes           |
+| Vala             | vala-language-server              | No        | No            |
+| Vue              | vue-language-server               | Yes       | Yes           |
+| V                | vls                               | Yes       | Yes           |
+| XML              | lemminx                           | Yes       | Yes           |
+| YAML             | yaml-language-server              | Yes       | Yes           |
+| ZIG              | zls                               | No        | No            |
+| *                | efm-langserver                    | Yes       | Yes           |
 
 ## Notes
 
 ### clangd (C/C++)
 
-There is a Linux OS/version that does not run locally installed clangd due to zlib version mismatch. If you want to use clangd, please install clangd on your system.
+There is a Linux OS/version that does not run the locally installed clangd due to zlib version mismatch. If you want to use clangd, please install clangd on your system.
 
 ### rls (Rust)
 
-If you install rls already, you can use rls without configurations. But if you not installed rls yet, you can install it by following [this instruction](https://github.com/rust-lang/rls#setup).
+If you installed rls already, you can use rls without configurations. But if you have not installed rls yet, you can install it by following [these instructions](https://github.com/rust-lang/rls#setup).
+
+### deno (TypeScript)
+
+To use deno, `node_modules` should **not** located on the project directory or traversing the filesystem upwards.
+
+When you editing Node projects, following warning message is shown.
+
+`server "deno" is disabled since "node_modules" is found`
+
+If you want to disable warning message, you may put `.vim-lsp-settings/settings.json` in your project root directory.
+
+```json
+{
+  "deno": {
+    "disabled": true
+  }
+}
+```
+
+### flow (JavaScript)
+
+To use flow, the `.flowconfig` has to be located on the top of project directory.
+
+### graphql-language-service-cli(GraphQL)
+
+To use graphql-language-service-cli, the [GraphQL Config](https://graphql-config.com/introduction#examples) has to be located on the top of project directory. The schema must be pointed to the schema file correctly.
+
+```json
+{
+  "schema": "./schema.graphql"
+}
+```
 
 ### gql-language-server (GraphQL)
 
-To use gql-language-server, `.gqlconfig` have to be located on the top of project directory. And schema must be pointed to the schema file correctly.
+To use gql-language-server, the `.gqlconfig` has to be located on the top of project directory. The schema must be pointed to the schema file correctly.
 
 ```json5
 {
@@ -136,11 +220,22 @@ Finally, you have to install `@playlyfe/gql` into your project.
 $ npm install @playlyfe/gql --save-dev
 ```
 
+### [dart analysis server](https://github.com/dart-lang/sdk/tree/master/pkg/analysis_server) (Dart)
+
+If you have a separate existing installation of the dart analysis server and
+want it to be used, it must either exist in your path, or you must specify its
+location. See 'Configurations' below.
+
+### [haskell ide engine](https://github.com/haskell/haskell-ide-engine) (Haskell)
+
+If you installed hie with stack, you can use hie without configurations.
+But if you have not installed hie yet, you can install it by following [these steps](https://github.com/haskell/haskell-ide-engine#installation).
+
 ## Configurations
 
-Most of configurations are not required.
+Most of the configurations are not required.
 
-If you install clangd already, you can use clangd for C/C++ without configurations. But if you install clang with named clangd-6.0, you can replace executable like below:
+If you installed clangd already, you can use clangd for C/C++ without any configuration. But if you installed clang with named clangd-6.0, you can replace executable like below:
 
 ```vim
 let g:lsp_settings = {
@@ -149,7 +244,7 @@ let g:lsp_settings = {
 \}
 ```
 
-Or put `.vim-lsp-settings/settings.json` on your project root directory.
+Or put `.vim-lsp-settings/settings.json` in your project root directory.
 
 ```json
 {
@@ -162,26 +257,66 @@ Or put `.vim-lsp-settings/settings.json` on your project root directory.
 }
 ```
 
-To edit project local `settings.json`, do `:LspSettingsLocalEdit`.
+If you already have the dart analysis server installed but it is not in your
+path, you can still configure the settings to use it. Use the vimscript below
+to change the command to start the server. Note the command has three parts:
+the path to your 'dart' executable, the path to your 'analysis_server.dart.snapshot',
+and the '--lsp' flag.
+
+```vimscript
+let g:lsp_settings = {
+    \ 'analysis-server-dart-snapshot': {
+    \     'cmd': [
+    \         '/path/to/your/dart-sdk/bin/dart',
+    \         '/path/to/your/dart-sdk/bin/bin/snapshots/analysis_server.dart.snapshot',
+    \         '--lsp'
+    \     ],
+    \ },
+\ }
+```
+
+To edit the project local `settings.json`, do `:LspSettingsLocalEdit`.
 
 Overridable keys are:
 
 * cmd (List ex: `['clangd-6.0', '-enable-snippets']`)
 * initialization_options (Dictionary)
-* whitelist (List)
-* blacklist (List)
+* allowlist (List)
+* blocklist (List)
 * config (Dictionary)
 * workspace_config (Dictionary)
-
-If you install ruby but not solargraph, you can install solargraph with following command.
+* disabled (Boolean)
+* root_uri (String)
+* root_uri_patterns (List)
+* semantic_highlight (Dictionary)
 
 If you have some Language Servers and want to use specified the server:
 
 ```vim
-let g:lsp_settings_perl = 'slp'
+let g:lsp_settings_filetype_perl = 'slp'
+let g:lsp_settings_filetype_html = ['html-languageserver', 'angular-language-server']
+let g:lsp_settings_filetype_typescript = ['typescript-language-server', 'eslint-language-server']
 ```
 
-If you want to disable Language Server:
+When the servers are specified in a list, these will all be started.
+
+If you want to configure Language Server to use flake8 rather than pycodestyle,
+the following can be added to your `~/.vimrc` file.
+Note that `pyls-all` was the automatically registered server name. Check with `:LspStatus`.
+
+```vim
+let g:lsp_settings = {
+\   'pyls-all': {
+\     'workspace_config': {
+\       'pyls': {
+\         'configurationSources': ['flake8']
+\       }
+\     }
+\   },
+\}
+```
+
+If you want to disable a Language Server:
 
 ```vim
 let g:lsp_settings = {
@@ -190,6 +325,30 @@ let g:lsp_settings = {
 \   }
 \}
 ```
+
+When resolving the root directory for a language server, this plugin will look
+for directories containing special root markers defined in `g:lsp_settings_root_markers`.
+
+By default, this is set to:
+
+```vim
+let g:lsp_settings_root_markers = [
+\   '.git',
+\   '.git/',
+\   '.svn',
+\   '.hg',
+\   '.bzr'
+\ ]
+```
+
+If you need to specify alternative root markers:
+
+```vim
+let g:lsp_settings_root_markers = ['.projections.json', '.git', '.git/']
+```
+
+This would look for a custom `.projections.json`, a git submodule `.git` or a git root
+`.git/` starting from the current directory upwards.
 
 ## License
 

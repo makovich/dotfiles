@@ -2,7 +2,7 @@ let s:folding_ranges = {}
 let s:textprop_name = 'vim-lsp-folding-linenr'
 
 function! s:find_servers() abort
-    return filter(lsp#get_whitelisted_servers(), 'lsp#capabilities#has_folding_range_provider(v:val)')
+    return filter(lsp#get_allowed_servers(), 'lsp#capabilities#has_folding_range_provider(v:val)')
 endfunction
 
 function! lsp#ui#vim#folding#fold(sync) abort
@@ -47,7 +47,8 @@ function! s:get_line_count_buf(buf) abort
     if !has('patch-8.1.1967')
         return line('$')
     endif
-    return line('$', win_findbuf(a:buf)[0])
+    let l:winids = win_findbuf(a:buf)
+    return empty(l:winids) ? line('$') : line('$', l:winids[0])
 endfunction
 
 function! lsp#ui#vim#folding#send_request(server_name, buf, sync) abort

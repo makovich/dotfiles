@@ -1,5 +1,6 @@
 let s:enabled = 0
 let s:already_setup = 0
+let s:Stream = lsp#callbag#makeSubject()
 let s:servers = {} " { lsp_id, server_info, init_callbacks, init_result, buffers: { path: { changed_tick } }
 let s:last_command_id = 0
 let s:notification_callbacks = [] " { name, callback }
@@ -29,6 +30,8 @@ augroup _lsp_silent_
     autocmd User lsp_float_opened silent
     autocmd User lsp_float_closed silent
     autocmd User lsp_buffer_enabled silent
+    autocmd User lsp_diagnostics_updated silent
+    autocmd User lsp_progress_updated silent
 augroup END
 
 function! lsp#log_verbose(...) abort
@@ -48,20 +51,21 @@ function! lsp#enable() abort
         return
     endif
     if !s:already_setup
-        doautocmd User lsp_setup
+        doautocmd <nomodeline> User lsp_setup
         let s:already_setup = 1
     endif
     let s:enabled = 1
-    if g:lsp_diagnostics_enabled
-        if g:lsp_signs_enabled | call lsp#ui#vim#signs#enable() | endif
-        if g:lsp_virtual_text_enabled | call lsp#ui#vim#virtual#enable() | endif
-        if g:lsp_highlights_enabled | call lsp#ui#vim#highlights#enable() | endif
-        if g:lsp_textprop_enabled | call lsp#ui#vim#diagnostics#textprop#enable() | endif
-    endif
     if g:lsp_signature_help_enabled
         call lsp#ui#vim#signature_help#setup()
     endif
     call lsp#ui#vim#completion#_setup()
+    call lsp#internal#document_highlight#_enable()
+    call lsp#internal#diagnostics#_enable()
+    call lsp#internal#document_code_action#signs#_enable()
+    call lsp#internal#show_message_request#_enable()
+    call lsp#internal#show_message#_enable()
+    call lsp#internal#work_done_progress#_enable()
+    call lsp#internal#completion#documentation#_enable()
     call s:register_events()
 endfunction
 
@@ -69,10 +73,15 @@ function! lsp#disable() abort
     if !s:enabled
         return
     endif
-    call lsp#ui#vim#signs#disable()
-    call lsp#ui#vim#virtual#disable()
-    call lsp#ui#vim#highlights#disable()
-    call lsp#ui#vim#diagnostics#textprop#disable()
+    call lsp#ui#vim#signature_help#_disable()
+    call lsp#ui#vim#completion#_disable()
+    call lsp#internal#document_highlight#_disable()
+    call lsp#internal#diagnostics#_disable()
+    call lsp#internal#document_code_action#signs#_disable()
+    call lsp#internal#show_message_request#_disable()
+    call lsp#internal#show_message#_disable()
+    call lsp#internal#work_done_progress#_disable()
+    call lsp#internal#completion#documentation#_disable()
     call s:unregister_events()
     let s:enabled = 0
 endfunction
@@ -83,6 +92,10 @@ endfunction
 
 function! lsp#get_server_info(server_name) abort
     return s:servers[a:server_name]['server_info']
+endfunction
+
+function! lsp#get_server_root_uri(server_name) abort
+    return get(s:servers[a:server_name]['server_info'], '_root_uri_resolved', '')
 endfunction
 
 function! lsp#get_server_capabilities(server_name) abort
@@ -143,9 +156,9 @@ function! lsp#print_server_status() abort
 endfunction
 
 " @params {server_info} = {
-"   'name': 'go-langserver',        " requried, must be unique
-"   'whitelist': ['go'],            " optional, array of filetypes to whitelist, * for all filetypes
-"   'blacklist': [],                " optional, array of filetypes to blacklist, * for all filetypes,
+"   'name': 'go-langserver',        " required, must be unique
+"   'allowlist': ['go'],            " optional, array of filetypes to allow, * for all filetypes
+"   'blocklist': [],                " optional, array of filetypes to block, * for all filetypes,
 "   'cmd': {server_info->['go-langserver]} " function that takes server_info and returns array of cmd and args, return empty if you don't want to start the server
 " }
 function! lsp#register_server(server_info) abort
@@ -159,7 +172,17 @@ function! lsp#register_server(server_info) abort
         \ 'buffers': {},
         \ }
     call lsp#log('lsp#register_server', 'server registered', l:server_name)
-    doautocmd User lsp_register_server
+    doautocmd <nomodeline> User lsp_register_server
+endfunction
+
+"
+" lsp#register_command
+"
+" @param {command_name} = string
+" @param {callback} = funcref
+"
+function! lsp#register_command(command_name, callback) abort
+    call lsp#ui#vim#execute_command#_register(a:command_name, a:callback)
 endfunction
 
 function! lsp#register_notifications(name, callback) abort
@@ -189,36 +212,47 @@ function! s:register_events() abort
         if exists('##TextChangedP')
             autocmd TextChangedP * call s:on_text_document_did_change()
         endif
-        if g:lsp_diagnostics_echo_cursor || g:lsp_diagnostics_float_cursor || g:lsp_highlight_references_enabled
-            autocmd CursorMoved * call s:on_cursor_moved()
-        endif
-        autocmd BufWinEnter,BufWinLeave,InsertEnter * call lsp#ui#vim#references#clean_references()
     augroup END
-    call s:on_text_document_did_open()
+
+    for l:bufnr in range(1, bufnr('$'))
+        if bufexists(l:bufnr) && bufloaded(l:bufnr)
+            call s:on_text_document_did_open(l:bufnr)
+        endif
+    endfor
 endfunction
 
 function! s:unregister_events() abort
     augroup lsp
         autocmd!
     augroup END
-    doautocmd User lsp_unregister_server
+    doautocmd <nomodeline> User lsp_unregister_server
 endfunction
 
-function! s:on_text_document_did_open() abort
-    let l:buf = bufnr('%')
+function! s:on_text_document_did_open(...) abort
+    let l:buf = a:0 > 0 ? a:1 : bufnr('%')
     if getbufvar(l:buf, '&buftype') ==# 'terminal' | return | endif
     if getcmdwintype() !=# '' | return | endif
     call lsp#log('s:on_text_document_did_open()', l:buf, &filetype, getcwd(), lsp#utils#get_buffer_uri(l:buf))
-    for l:server_name in lsp#get_whitelisted_servers(l:buf)
+
+    " Some language server notify diagnostics to the buffer that has not been loaded yet.
+    " This diagnostics was stored `autoload/lsp/internal/diagnostics/state.vim` but not highlighted.
+    " So we should refresh highlights when buffer opened.
+    call lsp#internal#diagnostics#state#_force_notify_buffer(l:buf)
+
+    for l:server_name in lsp#get_allowed_servers(l:buf)
         call s:ensure_flush(l:buf, l:server_name, function('s:fire_lsp_buffer_enabled', [l:server_name, l:buf]))
     endfor
+endfunction
+
+function! lsp#activate() abort
+  call s:on_text_document_did_open()
 endfunction
 
 function! s:on_text_document_did_save() abort
     let l:buf = bufnr('%')
     if getbufvar(l:buf, '&buftype') ==# 'terminal' | return | endif
     call lsp#log('s:on_text_document_did_save()', l:buf)
-    for l:server_name in lsp#get_whitelisted_servers(l:buf)
+    for l:server_name in lsp#get_allowed_servers(l:buf)
         if g:lsp_text_document_did_save_delay >= 0
             " We delay the callback by one loop iteration as calls to ensure_flush
             " can introduce mmap'd file locks that linger on Windows and collide
@@ -235,22 +269,6 @@ function! s:on_text_document_did_change() abort
     if getbufvar(l:buf, '&buftype') ==# 'terminal' | return | endif
     call lsp#log('s:on_text_document_did_change()', l:buf)
     call s:add_didchange_queue(l:buf)
-endfunction
-
-function! s:on_cursor_moved() abort
-    let l:buf = bufnr('%')
-    if getbufvar(l:buf, '&buftype') ==# 'terminal' | return | endif
-
-    if g:lsp_diagnostics_echo_cursor
-        call lsp#ui#vim#diagnostics#echo#cursor_moved()
-    endif
-    if g:lsp_diagnostics_float_cursor && lsp#ui#vim#output#float_supported()
-        call lsp#ui#vim#diagnostics#float#cursor_moved()
-    endif
-
-    if g:lsp_highlight_references_enabled
-        call lsp#ui#vim#references#highlight(v:false)
-    endif
 endfunction
 
 function! s:call_did_save(buf, server_name, result, cb) abort
@@ -326,9 +344,11 @@ endfunction
 
 function! s:fire_lsp_buffer_enabled(server_name, buf, ...) abort
     if a:buf == bufnr('%')
-        doautocmd User lsp_buffer_enabled
+        doautocmd <nomodeline> User lsp_buffer_enabled
     else
-        exec printf('autocmd BufEnter <buffer=%d> ++once doautocmd User lsp_buffer_enabled', a:buf)
+        " Not using ++once in autocmd for compatibility of VIM8.0
+        let l:cmd = printf('autocmd BufEnter <buffer=%d> doautocmd <nomodeline> User lsp_buffer_enabled', a:buf)
+        exec printf('augroup _lsp_fire_buffer_enabled | exec "%s | autocmd! _lsp_fire_buffer_enabled BufEnter <buffer>" | augroup END', l:cmd)
     endif
 endfunction
 
@@ -394,29 +414,40 @@ function! s:ensure_start(buf, server_name, cb) abort
         return
     endif
 
-    let l:cmd_type = type(l:server_info['cmd'])
-    if l:cmd_type == v:t_list
-        let l:cmd = l:server_info['cmd']
-    else
-        let l:cmd = l:server_info['cmd'](l:server_info)
+    if has_key(l:server_info, 'tcp')
+        let l:tcp = l:server_info['tcp'](l:server_info)
+        let l:lsp_id = lsp#client#start({
+            \ 'tcp': l:tcp,
+            \ 'on_stderr': function('s:on_stderr', [a:server_name]),
+            \ 'on_exit': function('s:on_exit', [a:server_name]),
+            \ 'on_notification': function('s:on_notification', [a:server_name]),
+            \ 'on_request': function('s:on_request', [a:server_name]),
+            \ })
+    elseif has_key(l:server_info, 'cmd')
+        let l:cmd_type = type(l:server_info['cmd'])
+        if l:cmd_type == v:t_list
+            let l:cmd = l:server_info['cmd']
+        else
+            let l:cmd = l:server_info['cmd'](l:server_info)
+        endif
+
+        if empty(l:cmd)
+            let l:msg = s:new_rpc_error('ignore server start since cmd is empty', { 'server_name': a:server_name })
+            call lsp#log(l:msg)
+            call a:cb(l:msg)
+            return
+        endif
+
+        call lsp#log('Starting server', a:server_name, l:cmd)
+
+        let l:lsp_id = lsp#client#start({
+            \ 'cmd': l:cmd,
+            \ 'on_stderr': function('s:on_stderr', [a:server_name]),
+            \ 'on_exit': function('s:on_exit', [a:server_name]),
+            \ 'on_notification': function('s:on_notification', [a:server_name]),
+            \ 'on_request': function('s:on_request', [a:server_name]),
+            \ })
     endif
-
-    if empty(l:cmd)
-        let l:msg = s:new_rpc_error('ignore server start since cmd is empty', { 'server_name': a:server_name })
-        call lsp#log(l:msg)
-        call a:cb(l:msg)
-        return
-    endif
-
-    call lsp#log('Starting server', a:server_name, l:cmd)
-
-    let l:lsp_id = lsp#client#start({
-        \ 'cmd': l:cmd,
-        \ 'on_stderr': function('s:on_stderr', [a:server_name]),
-        \ 'on_exit': function('s:on_exit', [a:server_name]),
-        \ 'on_notification': function('s:on_notification', [a:server_name]),
-        \ 'on_request': function('s:on_request', [a:server_name]),
-        \ })
 
     if l:lsp_id > 0
         let l:server['lsp_id'] = l:lsp_id
@@ -431,55 +462,98 @@ function! s:ensure_start(buf, server_name, cb) abort
 endfunction
 
 function! lsp#default_get_supported_capabilities(server_info) abort
+    " Sorted alphabetically
     return {
-    \   'workspace': {
-    \       'applyEdit': v:true,
-    \       'configuration': v:true
-    \   },
     \   'textDocument': {
-    \       'completion': {
-    \           'completionItem': {
-    \              'documentationFormat': ['plaintext'],
-    \              'snippetSupport': v:false
-    \           },
-    \           'completionItemKind': {
-    \              'valueSet': lsp#omni#get_completion_item_kinds()
-    \           }
-    \       },
     \       'codeAction': {
     \         'dynamicRegistration': v:false,
     \         'codeActionLiteralSupport': {
     \           'codeActionKind': {
     \             'valueSet': ['', 'quickfix', 'refactor', 'refactor.extract', 'refactor.inline', 'refactor.rewrite', 'source', 'source.organizeImports'],
     \           }
-    \         }
+    \         },
+    \         'isPreferredSupport': v:true,
+    \         'disabledSupport': v:true,
+    \       },
+    \       'codeLens': {
+    \           'dynamicRegistration': v:false,
+    \       },
+    \       'completion': {
+    \           'dynamicRegistration': v:false,
+    \           'completionItem': {
+    \              'documentationFormat': ['markdown', 'plaintext'],
+    \              'snippetSupport': v:false,
+    \              'resolveSupport': {
+    \                  'properties': ['additionalTextEdits']
+    \              }
+    \           },
+    \           'completionItemKind': {
+    \              'valueSet': lsp#omni#get_completion_item_kinds()
+    \           }
     \       },
     \       'declaration': {
+    \           'dynamicRegistration': v:false,
     \           'linkSupport' : v:true
     \       },
     \       'definition': {
+    \           'dynamicRegistration': v:false,
     \           'linkSupport' : v:true
     \       },
-    \       'typeDefinition': {
-    \           'linkSupport' : v:true
-    \       },
-    \       'implementation': {
-    \           'linkSupport' : v:true
+    \       'documentHighlight': {
+    \           'dynamicRegistration': v:false,
     \       },
     \       'documentSymbol': {
+    \           'dynamicRegistration': v:false,
     \           'symbolKind': {
     \              'valueSet': lsp#ui#vim#utils#get_symbol_kinds()
     \           },
-    \           'hierarchicalDocumentSymbolSupport': v:false
+    \           'hierarchicalDocumentSymbolSupport': v:false,
+    \           'labelSupport': v:false
     \       },
     \       'foldingRange': {
-    \           'lineFoldingOnly': v:true
+    \           'dynamicRegistration': v:false,
+    \           'lineFoldingOnly': v:true,
+    \           'rangeLimit': 5000,
+    \       },
+    \       'formatting': {
+    \           'dynamicRegistration': v:false,
+    \       },
+    \       'hover': {
+    \           'dynamicRegistration': v:false,
+    \           'contentFormat': ['markdown', 'plaintext'],
+    \       },
+    \       'implementation': {
+    \           'dynamicRegistration': v:false,
+    \           'linkSupport' : v:true
+    \       },
+    \       'rangeFormatting': {
+    \           'dynamicRegistration': v:false,
+    \       },
+    \       'references': {
+    \           'dynamicRegistration': v:false,
     \       },
     \       'semanticHighlightingCapabilities': {
     \           'semanticHighlighting': lsp#ui#vim#semantic#is_enabled()
     \       },
+    \       'synchronization': {
+    \           'didSave': v:true,
+    \           'dynamicRegistration': v:false,
+    \           'willSave': v:false,
+    \           'willSaveWaitUntil': v:false,
+    \       },
     \       'typeHierarchy': v:false,
-    \   }
+    \       'typeDefinition': {
+    \           'dynamicRegistration': v:false,
+    \           'linkSupport' : v:true
+    \       },
+    \   },
+    \   'window': {
+    \       'workDoneProgress': g:lsp_work_done_progress_enabled ? v:true : v:false,
+    \   },
+    \   'workspace': {
+    \       'applyEdit': v:true,
+    \       'configuration': v:true
+    \   },
     \ }
 endfunction
 
@@ -504,18 +578,13 @@ function! s:ensure_init(buf, server_name, cb) abort
     " server has already started, but not initialized
 
     let l:server_info = l:server['server_info']
-    if has_key(l:server_info, 'root_uri')
-        let l:root_uri = l:server_info['root_uri'](l:server_info)
-    else
-        let l:root_uri = lsp#utils#get_default_root_uri()
-    endif
-
+    let l:root_uri = has_key(l:server_info, 'root_uri') ?  l:server_info['root_uri'](l:server_info) : ''
     if empty(l:root_uri)
         let l:msg = s:new_rpc_error('ignore initialization lsp server due to empty root_uri', { 'server_name': a:server_name, 'lsp_id': l:server['lsp_id'] })
         call lsp#log(l:msg)
-        call a:cb(l:msg)
-        return
+        let l:root_uri = lsp#utils#get_default_root_uri()
     endif
+    let l:server['server_info']['_root_uri_resolved'] = l:root_uri
 
     if has_key(l:server_info, 'capabilities')
         let l:capabilities = l:server_info['capabilities']
@@ -527,6 +596,7 @@ function! s:ensure_init(buf, server_name, cb) abort
     \   'method': 'initialize',
     \   'params': {
     \     'processId': getpid(),
+    \     'clientInfo': { 'name': 'vim-lsp' },
     \     'capabilities': l:capabilities,
     \     'rootUri': l:root_uri,
     \     'rootPath': lsp#utils#uri_to_path(l:root_uri),
@@ -592,6 +662,12 @@ function! s:ensure_changed(buf, server_name, cb) abort
     let l:path = lsp#utils#get_buffer_uri(a:buf)
 
     let l:buffers = l:server['buffers']
+    if !has_key(l:buffers, l:path)
+        let l:msg = s:new_rpc_success('file is not managed', { 'server_name': a:server_name, 'path': l:path })
+        call lsp#log(l:msg)
+        call a:cb(l:msg)
+        return
+    endif
     let l:buffer_info = l:buffers[l:path]
 
     let l:changed_tick = getbufvar(a:buf, 'changedtick')
@@ -625,7 +701,7 @@ function! s:ensure_open(buf, server_name, cb) abort
     let l:path = lsp#utils#get_buffer_uri(a:buf)
 
     if empty(l:path)
-        let l:msg = s:new_rpc_error('ignore open since not a valid uri', { 'server_name': a:server_name, 'path': l:path })
+        let l:msg = s:new_rpc_success('ignore open since not a valid uri', { 'server_name': a:server_name, 'path': l:path })
         call lsp#log(l:msg)
         call a:cb(l:msg)
         return
@@ -666,7 +742,7 @@ function! s:send_request(server_name, data) abort
         let l:data['on_notification'] = '---funcref---'
     endif
     call lsp#log_verbose('--->', l:lsp_id, a:server_name, l:data)
-    call lsp#client#send_request(l:lsp_id, a:data)
+    return lsp#client#send_request(l:lsp_id, a:data)
 endfunction
 
 function! s:send_notification(server_name, data) abort
@@ -700,7 +776,9 @@ function! s:on_exit(server_name, id, data, event) abort
         if has_key(l:server, 'init_result')
             unlet l:server['init_result']
         endif
-        doautocmd User lsp_server_exit
+        call lsp#stream(1, { 'server': '$vimlsp',
+            \ 'response': { 'method': '$/vimlsp/lsp_server_exit', 'params': { 'server': a:server_name } } })
+        doautocmd <nomodeline> User lsp_server_exit
     endif
 endfunction
 
@@ -708,14 +786,20 @@ function! s:on_notification(server_name, id, data, event) abort
     call lsp#log_verbose('<---', a:id, a:server_name, a:data)
     let l:response = a:data['response']
     let l:server = s:servers[a:server_name]
+    let l:server_info = l:server['server_info']
+
+    let l:stream_data = { 'server': a:server_name, 'response': l:response }
+    if has_key(a:data, 'request')
+        let l:stream_data['request'] = a:data['request']
+    endif
+    call lsp#stream(1, l:stream_data) " notify stream before callbacks
 
     if lsp#client#is_server_instantiated_notification(a:data)
         if has_key(l:response, 'method')
-            if g:lsp_diagnostics_enabled && l:response['method'] ==# 'textDocument/publishDiagnostics'
-                call lsp#ui#vim#diagnostics#handle_text_document_publish_diagnostics(a:server_name, a:data)
-            elseif l:response['method'] ==# 'textDocument/semanticHighlighting'
+            if l:response['method'] ==# 'textDocument/semanticHighlighting'
                 call lsp#ui#vim#semantic#handle_semantic(a:server_name, a:data)
             endif
+            " NOTE: this is legacy code, use stream instead of handling notifications here
         endif
     else
         let l:request = a:data['request']
@@ -731,16 +815,25 @@ function! s:on_notification(server_name, id, data, event) abort
 endfunction
 
 function! s:on_request(server_name, id, request) abort
-    call lsp#log_verbose('<---', a:id, a:request)
+    call lsp#log_verbose('<---', 's:on_request', a:id, a:request)
+
+    let l:stream_data = { 'server': a:server_name, 'request': a:request }
+    call lsp#stream(1, l:stream_data) " notify stream before callbacks
+
     if a:request['method'] ==# 'workspace/applyEdit'
         call lsp#utils#workspace_edit#apply_workspace_edit(a:request['params']['edit'])
         call s:send_response(a:server_name, { 'id': a:request['id'], 'result': { 'applied': v:true } })
     elseif a:request['method'] ==# 'workspace/configuration'
         let l:response_items = map(a:request['params']['items'], { key, val -> lsp#utils#workspace_config#get_value(a:server_name, val) })
         call s:send_response(a:server_name, { 'id': a:request['id'], 'result': l:response_items })
+    elseif a:request['method'] ==# 'window/workDoneProgress/create'
+        call s:send_response(a:server_name, { 'id': a:request['id'], 'result': v:null})
     else
-        " Error returned according to json-rpc specification.
-        call s:send_response(a:server_name, { 'id': a:request['id'], 'error': { 'code': -32601, 'message': 'Method not found' } })
+        " TODO: for now comment this out until we figure out a better solution.
+        " We need to comment this out so that others outside of vim-lsp can
+        " hook into the stream and provide their own response.
+        " " Error returned according to json-rpc specification.
+        " call s:send_response(a:server_name, { 'id': a:request['id'], 'error': { 'code': -32601, 'message': 'Method not found' } })
     endif
 endfunction
 
@@ -772,13 +865,17 @@ function! s:handle_initialize(server_name, data) abort
         call l:Init_callback(a:data)
     endfor
 
-    doautocmd User lsp_server_init
+    doautocmd <nomodeline> User lsp_server_init
 endfunction
 
-" call lsp#get_whitelisted_servers()
-" call lsp#get_whitelisted_servers(bufnr('%'))
-" call lsp#get_whitelisted_servers('typescript')
 function! lsp#get_whitelisted_servers(...) abort
+    return call(function('lsp#get_allowed_servers'), a:000)
+endfunction
+
+" call lsp#get_allowed_servers()
+" call lsp#get_allowed_servers(bufnr('%'))
+" call lsp#get_allowed_servers('typescript')
+function! lsp#get_allowed_servers(...) abort
     if a:0 == 0
         let l:buffer_filetype = &filetype
     else
@@ -794,23 +891,33 @@ function! lsp#get_whitelisted_servers(...) abort
 
     for l:server_name in keys(s:servers)
         let l:server_info = s:servers[l:server_name]['server_info']
-        let l:blacklisted = 0
+        let l:blocked = 0
 
-        if has_key(l:server_info, 'blacklist')
-            for l:filetype in l:server_info['blacklist']
+        if has_key(l:server_info, 'blocklist')
+            let l:blocklistkey = 'blocklist'
+        else
+            let l:blocklistkey = 'blacklist'
+        endif
+        if has_key(l:server_info, l:blocklistkey)
+            for l:filetype in l:server_info[l:blocklistkey]
                 if l:filetype ==? l:buffer_filetype || l:filetype ==# '*'
-                    let l:blacklisted = 1
+                    let l:blocked = 1
                     break
                 endif
             endfor
         endif
 
-        if l:blacklisted
+        if l:blocked
             continue
         endif
 
-        if has_key(l:server_info, 'whitelist')
-            for l:filetype in l:server_info['whitelist']
+        if has_key(l:server_info, 'allowlist')
+            let l:allowlistkey = 'allowlist'
+        else
+            let l:allowlistkey = 'whitelist'
+        endif
+        if has_key(l:server_info, l:allowlistkey)
+            for l:filetype in l:server_info[l:allowlistkey]
                 if l:filetype ==? l:buffer_filetype || l:filetype ==# '*'
                     let l:active_servers += [l:server_name]
                     break
@@ -827,9 +934,12 @@ function! s:get_text_document_text(buf, server_name) abort
 endfunction
 
 function! s:get_text_document(buf, server_name, buffer_info) abort
+    let l:server = s:servers[a:server_name]
+    let l:server_info = l:server['server_info']
+    let l:language_id = has_key(l:server_info, 'languageId') ?  l:server_info['languageId'](l:server_info) : &filetype
     return {
         \ 'uri': lsp#utils#get_buffer_uri(a:buf),
-        \ 'languageId': &filetype,
+        \ 'languageId': l:language_id,
         \ 'version': a:buffer_info['version'],
         \ 'text': s:get_text_document_text(a:buf, a:server_name),
         \ }
@@ -857,20 +967,134 @@ function! s:get_versioned_text_document_identifier(buf, buffer_info) abort
         \ }
 endfunction
 
-function! lsp#send_request(server_name, request) abort
-    let l:bufnr = get(a:request, 'bufnr', bufnr('%'))
-    let l:Cb = has_key(a:request, 'on_notification') ? a:request['on_notification'] : function('s:Noop')
-    let l:request = copy(a:request)
-    let l:request['on_notification'] = {id, data, event->l:Cb(data)}
-    call lsp#utils#step#start([
-        \ {s->s:ensure_flush(l:bufnr, a:server_name, s.callback)},
-        \ {s->s:is_step_error(s) ? l:Cb(s.result[0]) : s:send_request(a:server_name, l:request) },
-        \ ])
+" lsp#stream {{{
+"
+" example 1:
+"
+" function! s:on_textDocumentDiagnostics(x) abort
+"   echom 'Diagnostics for ' . a:x['server'] . ' ' . json_encode(a:x['response'])
+" endfunction
+"
+" au User lsp_setup call lsp#callbag#pipe(
+"    \ lsp#stream(),
+"    \ lsp#callbag#filter({x-> has_key(x, 'response') && !has_key(x['response'], 'error') && get(x['response'], 'method', '') == 'textDocument/publishDiagnostics'}),
+"    \ lsp#callbag#subscribe({ 'next':{x->s:on_textDocumentDiagnostics(x)} }),
+"    \ )
+"
+" example 2:
+" call lsp#stream(1, { 'command': 'DocumentFormat' })
+function! lsp#stream(...) abort
+    if a:0 == 0
+        return lsp#callbag#share(s:Stream)
+    else
+        call s:Stream(a:1, a:2)
+    endif
 endfunction
+" }}}
+
+" lsp#request {{{
+function! lsp#request(server_name, request) abort
+    let l:ctx = {
+        \ 'server_name': a:server_name,
+        \ 'request': copy(a:request),
+        \ 'request_id': 0,
+        \ 'done': 0,
+        \ 'cancelled': 0,
+        \ }
+    return lsp#callbag#create(function('s:request_create', [l:ctx]))
+endfunction
+
+function! s:request_create(ctx, next, error, complete) abort
+    let a:ctx['next'] = a:next
+    let a:ctx['error'] = a:error
+    let a:ctx['complete'] = a:complete
+    let a:ctx['bufnr'] = get(a:ctx['request'], 'bufnr', bufnr('%'))
+    let a:ctx['request']['on_notification'] = function('s:request_on_notification', [a:ctx])
+    call lsp#utils#step#start([
+        \ {s->s:ensure_flush(a:ctx['bufnr'], a:ctx['server_name'], s.callback)},
+        \ {s->s:is_step_error(s) ? s:request_error(a:ctx, s.result[0]) : s:request_send(a:ctx) },
+        \ ])
+    return function('s:request_cancel', [a:ctx])
+endfunction
+
+function! s:request_send(ctx) abort
+    if a:ctx['cancelled'] | return | endif " caller already unsubscribed so don't bother sending request
+    let a:ctx['request_id'] = s:send_request(a:ctx['server_name'], a:ctx['request'])
+endfunction
+
+function! s:request_error(ctx, error) abort
+    if a:ctx['cancelled'] | return | endif " caller already unsubscribed so don't bother notifying
+    let a:ctx['done'] = 1
+    call a:ctx['error'](a:error)
+endfunction
+
+function! s:request_on_notification(ctx, id, data, event) abort
+    if a:ctx['cancelled'] | return | endif " caller already unsubscribed so don't bother notifying
+    let a:ctx['done'] = 1
+    call a:ctx['next'](extend({ 'server_name': a:ctx['server_name'] }, a:data))
+    call a:ctx['complete']()
+endfunction
+
+function! s:request_cancel(ctx) abort
+    if a:ctx['cancelled'] | return | endif
+    let a:ctx['cancelled'] = 1
+    if a:ctx['request_id'] <= 0 || a:ctx['done'] | return | endif " we have not made the request yet or request is complete, so nothing to cancel
+    if lsp#get_server_status(a:ctx['server_name']) !=# 'running' | return | endif " if server is not running we cant send the request
+    " send the actual cancel request
+    let a:ctx['dispose'] = lsp#callbag#pipe(
+        \ lsp#notification(a:ctx['server_name'], {
+        \   'method': '$/cancelRequest',
+        \   'params': { 'id': a:ctx['request_id'] },
+        \ }),
+        \ lsp#callbag#subscribe({
+        \   'error':{e->s:send_request_dispose(a:ctx)},
+        \   'complete':{->s:send_request_dispose(a:ctx)},
+        \ })
+        \)
+endfunction
+
+function! lsp#send_request(server_name, request) abort
+    let l:ctx = {
+        \ 'server_name': a:server_name,
+        \ 'request': copy(a:request),
+        \ 'cb': has_key(a:request, 'on_notification') ? a:request['on_notification'] : function('s:Noop'),
+        \ }
+    let l:ctx['dispose'] = lsp#callbag#pipe(
+        \ lsp#request(a:server_name, a:request),
+        \ lsp#callbag#subscribe({
+        \   'next':{d->l:ctx['cb'](d)},
+        \   'error':{e->s:send_request_error(l:ctx, e)},
+        \   'complete':{->s:send_request_dispose(l:ctx)},
+        \ })
+        \)
+endfunction
+
+function! s:send_request_dispose(ctx) abort
+    " dispose function may not have been created so check before calling
+    if has_key(a:ctx, 'dispose')
+        call a:ctx['dispose']()
+    endif
+endfunction
+
+function! s:send_request_error(ctx, error) abort
+    call a:ctx['cb'](a:error)
+    call s:send_request_dispose(a:ctx)
+endfunction
+" }}}
+
+" lsp#notification {{{
+function! lsp#notification(server_name, request) abort
+    return lsp#callbag#lazy(function('s:send_notification', [a:server_name, a:request]))
+endfunction
+" }}}
 
 " omnicompletion
 function! lsp#complete(...) abort
     return call('lsp#omni#complete', a:000)
+endfunction
+
+function! lsp#tagfunc(...) abort
+    return call('lsp#tag#tagfunc', a:000)
 endfunction
 
 let s:didchange_queue = []
@@ -878,7 +1102,7 @@ let s:didchange_timer = -1
 
 function! s:add_didchange_queue(buf) abort
     if g:lsp_use_event_queue == 0
-        for l:server_name in lsp#get_whitelisted_servers(a:buf)
+        for l:server_name in lsp#get_allowed_servers(a:buf)
             call s:ensure_flush(a:buf, l:server_name, function('s:Noop'))
         endfor
         return
@@ -899,22 +1123,58 @@ function! s:send_didchange_queue(...) abort
         if !bufexists(l:buf)
             continue
         endif
-        for l:server_name in lsp#get_whitelisted_servers(l:buf)
+        for l:server_name in lsp#get_allowed_servers(l:buf)
             call s:ensure_flush(l:buf, l:server_name, function('s:Noop'))
         endfor
     endfor
     let s:didchange_queue = []
 endfunction
 
+function! lsp#enable_diagnostics_for_buffer(...) abort
+    let l:bufnr = a:0 > 0 ? a:1 : bufnr('%')
+    call lsp#internal#diagnostics#state#_enable_for_buffer(l:bufnr)
+endfunction
+
+function! lsp#disable_diagnostics_for_buffer(...) abort
+    let l:bufnr = a:0 > 0 ? a:1 : bufnr('%')
+    call lsp#internal#diagnostics#state#_disable_for_buffer(l:bufnr)
+endfunction
+
 " Return dict with diagnostic counts for current buffer
 " { 'error': 1, 'warning': 0, 'information': 0, 'hint': 0 }
 function! lsp#get_buffer_diagnostics_counts() abort
-    return lsp#ui#vim#diagnostics#get_buffer_diagnostics_counts()
+    return lsp#internal#diagnostics#state#_get_diagnostics_count_for_buffer(bufnr('%'))
 endfunction
 
 " Return first error line or v:null if there are no errors
 function! lsp#get_buffer_first_error_line() abort
-    return lsp#ui#vim#diagnostics#get_buffer_first_error_line()
+    return lsp#internal#diagnostics#first_line#get_first_error_line({'bufnr': bufnr('%')})
+endfunction
+
+" Return UI list with window/workDoneProgress
+" The list is most recently update order.
+" [{ 'server': 'clangd', 'token': 'backgroundIndexProgress', 'title': 'indexing', 'messages': '50/100', 'percentage': 50 },
+"  { 'server': 'rust-analyzer', 'token': 'rustAnalyzer/indexing', 'title': 'indexing', 'messages': '9/262 (std)', 'percentage': 3 }]
+" 'percentage': 0 - 100 or not exist
+function! lsp#get_progress() abort
+    return lsp#internal#work_done_progress#get_progress()
+endfunction
+
+"
+" Scroll vim-lsp related windows.
+"
+" NOTE: This method can be used to <expr> mapping.
+"
+function! lsp#scroll(count) abort
+    let l:ctx = {}
+    function! l:ctx.callback(count) abort
+        let l:Window = vital#lsp#import('VS.Vim.Window')
+        for l:winid in l:Window.find({ winid -> l:Window.is_floating(winid) })
+            call l:Window.scroll(l:winid, l:Window.info(l:winid).topline + a:count)
+        endfor
+    endfunction
+    call timer_start(0, { -> l:ctx.callback(a:count) })
+    return "\<Ignore>"
 endfunction
 
 function! s:merge_dict(dict_old, dict_new) abort
@@ -944,6 +1204,7 @@ endfunction
 
 function! lsp#_new_command() abort
     let s:last_command_id += 1
+    call lsp#stream(1, { 'command': 1 })
     return s:last_command_id
 endfunction
 

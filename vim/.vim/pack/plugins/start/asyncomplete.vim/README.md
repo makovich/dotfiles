@@ -17,7 +17,14 @@ Plug 'prabirshrestha/asyncomplete.vim'
 ```vim
 inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
-inoremap <expr> <cr>    pumvisible() ? "\<C-y>" : "\<cr>"
+inoremap <expr> <cr>    pumvisible() ? asyncomplete#close_popup() : "\<cr>"
+```
+
+If you prefer the enter key to always insert a new line (even if the popup menu is visible) then
+you can amend the above mapping as follows:
+
+```vim
+inoremap <expr> <cr> pumvisible() ? asyncomplete#close_popup() . "\<cr>" : "\<cr>"
 ```
 
 ### Force refresh completion
@@ -35,7 +42,7 @@ let g:asyncomplete_auto_popup = 0
 ```
 
 You can use the above `<Plug>(asyncomplete_force_refresh)` to show the popup
-or can you tab to show the autocomplete.
+or you can tab to show the autocomplete.
 
 ```vim
 let g:asyncomplete_auto_popup = 0
@@ -54,16 +61,14 @@ inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
 
 #### Preview Window
 
-To disable preview window:
-
-```vim
-set completeopt-=preview
-```
-
 To enable preview window:
 
 ```vim
-set completeopt+=preview
+" allow modifying the completeopt variable, or it will
+" be overridden all the time
+let g:asyncomplete_auto_completeopt = 0
+
+set completeopt=menuone,noinsert,noselect,preview
 ```
 
 To auto close preview window when completion is done.
@@ -83,7 +88,6 @@ asyncomplete.vim deliberately does not contain any sources. Please use one of th
 
 ```vim
 Plug 'prabirshrestha/asyncomplete.vim'
-Plug 'prabirshrestha/async.vim'
 Plug 'prabirshrestha/vim-lsp'
 Plug 'prabirshrestha/asyncomplete-lsp.vim'
 
@@ -92,7 +96,7 @@ if executable('pyls')
     au User lsp_setup call lsp#register_server({
         \ 'name': 'pyls',
         \ 'cmd': {server_info->['pyls']},
-        \ 'whitelist': ['python'],
+        \ 'allowlist': ['python'],
         \ })
 endif
 ```
@@ -103,25 +107,38 @@ endif
 
 | Languages/FileType/Source     | Links                                                                                              |
 |-------------------------------|----------------------------------------------------------------------------------------------------|
+| [Ale][ale]                    | [asyncomplete-ale.vim](https://github.com/andreypopp/asyncomplete-ale.vim)                         |
 | Buffer                        | [asyncomplete-buffer.vim](https://github.com/prabirshrestha/asyncomplete-buffer.vim)               |
+| C/C++                         | [asyncomplete-clang.vim](https://github.com/keremc/asyncomplete-clang.vim)                         |
+| Clojure                       | [async-clj-omni](https://github.com/clojure-vim/async-clj-omni)                                    |
+| Common Lisp (vlime)           | [vlime](https://github.com/vlime/vlime)                                                            |
+| Dictionary (look)             | [asyncomplete-look](https://github.com/htlsne/asyncomplete-look)                                   |
+| [Emmet][emmet-vim]            | [asyncomplete-emmet.vim](https://github.com/prabirshrestha/asyncomplete-emmet.vim)                 |
+| English                       | [asyncomplete-nextword.vim](https://github.com/high-moctane/asyncomplete-nextword.vim)             |
 | Emoji                         | [asyncomplete-emoji.vim](https://github.com/prabirshrestha/asyncomplete-emoji.vim)                 |
 | Filenames / directories       | [asyncomplete-file.vim](https://github.com/prabirshrestha/asyncomplete-file.vim)                   |
 | [NeoInclude][neoinclude]      | [asyncomplete-neoinclude.vim](https://github.com/kyouryuukunn/asyncomplete-neoinclude.vim)         |
 | Go                            | [asyncomplete-gocode.vim](https://github.com/prabirshrestha/asyncomplete-gocode.vim)               |
+| Git commit message            | [asyncomplete-gitcommit](https://github.com/laixintao/asyncomplete-gitcommit)                      |
 | JavaScript (Flow)             | [asyncomplete-flow.vim](https://github.com/prabirshrestha/asyncomplete-flow.vim)                   |
 | [Neosnippet][neosnippet]      | [asyncomplete-neosnippet.vim](https://github.com/prabirshrestha/asyncomplete-neosnippet.vim)       |
 | Omni                          | [asyncomplete-omni.vim](https://github.com/yami-beta/asyncomplete-omni.vim)                        |
 | PivotalTracker stories        | [asyncomplete-pivotaltracker.vim](https://github.com/hauleth/asyncomplete-pivotaltracker.vim)      |
-| Racer                         | [asyncomplete-racer.vim](https://github.com/keremc/asyncomplete-racer.vim)                         |
+| Rust (racer)                  | [asyncomplete-racer.vim](https://github.com/keremc/asyncomplete-racer.vim)                         |
+| [TabNine][TabNine] powered by AI | [asyncomplete-tabnine.vim](https://github.com/kitagry/asyncomplete-tabnine.vim)                 |
 | [tmux complete][tmuxcomplete] | [tmux-complete.vim][tmuxcomplete]                                                                  |
 | Typescript                    | [asyncomplete-tscompletejob.vim](https://github.com/prabirshrestha/asyncomplete-tscompletejob.vim) |
 | [UltiSnips][ultisnips]        | [asyncomplete-ultisnips.vim](https://github.com/prabirshrestha/asyncomplete-ultisnips.vim)         |
+| User (compl-function)         | [asyncomplete-user.vim](https://github.com/jsit/asyncomplete-user.vim)                             |
 | Vim Syntax                    | [asyncomplete-necosyntax.vim](https://github.com/prabirshrestha/asyncomplete-necosyntax.vim)       |
 | Vim tags                      | [asyncomplete-tags.vim](https://github.com/prabirshrestha/asyncomplete-tags.vim)                   |
 | Vim                           | [asyncomplete-necovim.vim](https://github.com/prabirshrestha/asyncomplete-necovim.vim)             |
 
+[ale]:          https://github.com/dense-analysis/ale
+[emmet-vim]:    https://github.com/mattn/emmet-vim
 [neosnippet]:   https://github.com/Shougo/neosnippet.vim
 [neoinclude]:   https://github.com/Shougo/neoinclude.vim
+[TabNine]:      https://www.tabnine.com/
 [tmuxcomplete]: https://github.com/wellle/tmux-complete.vim
 [ultisnips]:    https://github.com/SirVer/ultisnips
 
@@ -138,7 +155,7 @@ endfunction
 
 au User asyncomplete_setup call asyncomplete#register_source({
     \ 'name': 'mylanguage',
-    \ 'whitelist': [*],
+    \ 'allowlist': ['*'],
     \ 'completor': function('s:completor'),
     \ })
 ```
@@ -168,7 +185,7 @@ endfunction
 
 au User asyncomplete_setup call asyncomplete#register_source({
     \ 'name': 'javascript',
-    \ 'whitelist': ['javascript'],
+    \ 'allowlist': ['javascript'],
     \ 'completor': function('s:js_completor'),
     \ })
 ```

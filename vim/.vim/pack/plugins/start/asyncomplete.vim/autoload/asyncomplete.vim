@@ -19,6 +19,8 @@ if !has('timers')
     else
         call asyncomplete#log('vim compiled with timers required.')
     endif
+    " Clear augroup so this message is only displayed once.
+    au! asyncomplete_enable *
     finish
 endif
 
@@ -26,6 +28,7 @@ let s:already_setup = 0
 let s:sources = {}
 let s:matches = {} " { server_name: { incomplete: 1, startcol: 0, items: [], refresh: 0, status: 'idle|pending|success|failure', ctx: ctx } }
 let s:has_complete_info = exists('*complete_info')
+let s:has_matchfuzzypos = exists('*matchfuzzypos')
 
 function! s:setup_if_required() abort
     if !s:already_setup
@@ -52,7 +55,7 @@ function! s:setup_if_required() abort
             autocmd InsertLeave * call s:on_insert_leave()
         augroup END
 
-        doautocmd User asyncomplete_setup
+        doautocmd <nomodeline> User asyncomplete_setup
         let s:already_setup = 1
     endif
 endfunction
@@ -141,7 +144,6 @@ function! s:on_insert_enter() abort
 endfunction
 
 function! s:on_insert_leave() abort
-    call s:disable_popup_skip()
     let s:matches = {}
     if exists('s:update_pum_timer')
         call timer_stop(s:update_pum_timer)
@@ -158,23 +160,33 @@ function! s:get_active_sources_for_buffer() abort
     call asyncomplete#log('core', 'computing active sources for buffer', bufnr('%'))
     let b:asyncomplete_active_sources = []
     for [l:name, l:info] in items(s:sources)
-        let l:blacklisted = 0
+        let l:blocked = 0
 
-        if has_key(l:info, 'blacklist')
-            for l:filetype in l:info['blacklist']
+        if has_key(l:info, 'blocklist')
+            let l:blocklistkey = 'blocklist'
+        else
+            let l:blocklistkey = 'blacklist'
+        endif
+        if has_key(l:info, l:blocklistkey)
+            for l:filetype in l:info[l:blocklistkey]
                 if l:filetype == &filetype || l:filetype is# '*'
-                    let l:blacklisted = 1
+                    let l:blocked = 1
                     break
                 endif
             endfor
         endif
 
-        if l:blacklisted
+        if l:blocked
             continue
         endif
 
-        if has_key(l:info, 'whitelist')
-            for l:filetype in l:info['whitelist']
+        if has_key(l:info, 'allowlist')
+            let l:allowlistkey = 'allowlist'
+        else
+            let l:allowlistkey = 'whitelist'
+        endif
+        if has_key(l:info, l:allowlistkey)
+            for l:filetype in l:info[l:allowlistkey]
                 if l:filetype == &filetype || l:filetype is# '*'
                     let b:asyncomplete_active_sources += [l:name]
                     break
@@ -223,22 +235,6 @@ function! s:update_trigger_characters() abort
     call asyncomplete#log('core', 'trigger characters for buffer', bufnr('%'), b:asyncomplete_triggers)
 endfunction
 
-function! s:enable_popup_skip() abort
-    let s:skip_popup = 1
-endfunction
-
-function! s:disable_popup_skip() abort
-    let s:skip_popup = 0
-endfunction
-
-function! s:should_skip_popup() abort
-  if get(s:, 'skip_popup', 0)
-    return 1
-  else
-    return 0
-  endif
-endfunction
-
 function! s:should_skip() abort
     if mode() isnot# 'i' || !get(b:, 'asyncomplete_enable', 0)
         return 1
@@ -248,13 +244,20 @@ function! s:should_skip() abort
 endfunction
 
 function! asyncomplete#close_popup() abort
-  call s:enable_popup_skip()
   return pumvisible() ? "\<C-y>" : ''
 endfunction
 
 function! asyncomplete#cancel_popup() abort
-  call s:enable_popup_skip()
   return pumvisible() ? "\<C-e>" : ''
+endfunction
+
+function! s:get_min_chars(source_name) abort
+  if exists('b:asyncomplete_min_chars')
+    return b:asyncomplete_min_chars
+  elseif has_key(s:sources, a:source_name)
+    return get(s:sources[a:source_name], 'min_chars', g:asyncomplete_min_chars)
+  endif
+  return g:asyncomplete_min_chars
 endfunction
 
 function! s:on_change() abort
@@ -265,42 +268,40 @@ function! s:on_change() abort
     endif
 
     let l:ctx = asyncomplete#context()
-    let l:startcol = l:ctx['col']
-    let l:last_char = l:ctx['typed'][l:startcol - 2] " col is 1-indexed, but str 0-indexed
-
-    let l:sources_to_notify = {}
-
-    " match sources based on the last character if it is a trigger character
-    if has_key(b:asyncomplete_triggers, l:last_char)
-        " TODO: also check for multiple chars instead of just last chars for
-        " languages such as cpp which uses -> and ::
-        for l:source_name in keys(b:asyncomplete_triggers[l:last_char])
-            if !has_key(s:matches, l:source_name) || s:matches[l:source_name]['ctx']['lnum'] != l:ctx['lnum'] || s:matches[l:source_name]['startcol'] != l:startcol
-                let l:sources_to_notify[l:source_name] = 1
-                let s:matches[l:source_name] = { 'startcol': l:startcol, 'status': 'idle', 'items': [], 'refresh': 0, 'ctx': l:ctx }
-            endif
-        endfor
+    let l:last_char = l:ctx['typed'][l:ctx['col'] - 2] " col is 1-indexed, but str 0-indexed
+    if exists('b:asyncomplete_triggers')
+        let l:triggered_sources = get(b:asyncomplete_triggers, l:last_char, {})
+    else
+        let l:triggered_sources = {}
     endif
-
-    " loop left and find the start of the word and set it as the startcol for the source instead of refresh_pattern
     let l:refresh_pattern = get(b:, 'asyncomplete_refresh_pattern', '\(\k\+$\)')
     let [l:_, l:startidx, l:endidx] = asyncomplete#utils#matchstrpos(l:ctx['typed'], l:refresh_pattern)
-    let l:startcol = l:startidx + 1
 
-    if l:startidx > -1
-        if s:should_skip_popup() | return | endif
-        for l:source_name in b:asyncomplete_active_sources
-            if !has_key(l:sources_to_notify, l:source_name)
-                if has_key(s:matches, l:source_name) && s:matches[l:source_name]['ctx']['lnum'] ==# l:ctx['lnum'] && s:matches[l:source_name]['startcol'] ==# l:startcol
-                    continue
-                endif
-                let l:sources_to_notify[l:source_name] = 1
+    for l:source_name in get(b:, 'asyncomplete_active_sources', [])
+        " match sources based on the last character if it is a trigger character
+        " TODO: also check for multiple chars instead of just last chars for
+        " languages such as cpp which uses -> and ::
+        if has_key(l:triggered_sources, l:source_name)
+            let l:startcol = l:ctx['col']
+        elseif l:startidx > -1 && l:endidx - l:startidx >= s:get_min_chars(l:source_name)
+            let l:startcol = l:startidx + 1 " col is 1-indexed, but str 0-indexed
+        endif
+        " here we use the existence of `l:startcol` to determine whether to
+        " use this completion source. If `l:startcol` exists, we use the
+        " source. If it does not exist, it means that we cannot get a
+        " meaningful starting point for the current source, and this implies
+        " that we cannot use this source for completion. Therefore, we remove
+        " the matches from the source.
+        if exists('l:startcol')
+            if !has_key(s:matches, l:source_name) || s:matches[l:source_name]['ctx']['lnum'] !=# l:ctx['lnum'] || s:matches[l:source_name]['startcol'] !=# l:startcol
                 let s:matches[l:source_name] = { 'startcol': l:startcol, 'status': 'idle', 'items': [], 'refresh': 0, 'ctx': l:ctx }
             endif
-        endfor
-    else
-        call s:disable_popup_skip()
-    endif
+        else
+            if has_key(s:matches, l:source_name)
+                unlet s:matches[l:source_name]
+            endif
+        endif
+    endfor
 
     call s:trigger(l:ctx)
     call s:update_pum()
@@ -362,7 +363,6 @@ function! asyncomplete#force_refresh() abort
 endfunction
 
 function! asyncomplete#_force_refresh() abort
-    call s:disable_popup_skip()
     if s:should_skip() | return | endif
 
     let l:ctx = asyncomplete#context()
@@ -377,7 +377,7 @@ function! asyncomplete#_force_refresh() abort
 
     let s:matches = {}
 
-    for l:source_name in b:asyncomplete_active_sources
+    for l:source_name in get(b:, 'asyncomplete_active_sources', [])
         let s:matches[l:source_name] = { 'startcol': l:startcol, 'status': 'idle', 'items': [], 'refresh': 0, 'ctx': l:ctx }
     endfor
 
@@ -397,7 +397,6 @@ endfunction
 
 function! s:recompute_pum(...) abort
     if s:should_skip() | return | endif
-    if s:should_skip_popup() | return | endif
 
     " TODO: add support for remote recomputation of complete items,
     " Ex: heavy computation such as fuzzy search can happen in a python thread
@@ -415,6 +414,8 @@ function! s:recompute_pum(...) abort
     let l:matches_to_filter = {}
 
     for [l:source_name, l:match] in items(s:matches)
+        " ignore sources that have been unregistered
+        if !has_key(s:sources, l:source_name) | continue | endif
         let l:startcol = l:match['startcol']
         let l:startcols += [l:startcol]
         let l:curitems = l:match['items']
@@ -442,18 +443,41 @@ function! s:recompute_pum(...) abort
     endif
 endfunction
 
+let s:pair = {
+\  '"':  '"',
+\  '''':  '''',
+\}
+
 function! s:default_preprocessor(options, matches) abort
     let l:items = []
     let l:startcols = []
     for [l:source_name, l:matches] in items(a:matches)
         let l:startcol = l:matches['startcol']
         let l:base = a:options['typed'][l:startcol - 1:]
-        for l:item in l:matches['items']
-            if stridx(l:item['word'], l:base) == 0
-                let l:startcols += [l:startcol]
-                call add(l:items, l:item)
+        if has_key(s:sources[l:source_name], 'filter')
+            let l:result = s:sources[l:source_name].filter(l:matches, l:startcol, l:base)
+            let l:items += l:result[0]
+            let l:startcols += l:result[1]
+        else
+            if empty(l:base)
+                for l:item in l:matches['items']
+                    call add(l:items, s:strip_pair_characters(l:base, l:item))
+                    let l:startcols += [l:startcol]
+                endfor
+            elseif s:has_matchfuzzypos && g:asyncomplete_matchfuzzy
+                for l:item in matchfuzzypos(l:matches['items'], l:base, {'key':'word'})[0]
+                    call add(l:items, s:strip_pair_characters(l:base, l:item))
+                    let l:startcols += [l:startcol]
+                endfor
+            else
+                for l:item in l:matches['items']
+                    if stridx(l:item['word'], l:base) == 0
+                        call add(l:items, s:strip_pair_characters(l:base, l:item))
+                        let l:startcols += [l:startcol]
+                    endif
+                endfor
             endif
-        endfor
+        endif
     endfor
 
     let a:options['startcol'] = min(l:startcols)
@@ -461,10 +485,23 @@ function! s:default_preprocessor(options, matches) abort
     call asyncomplete#preprocess_complete(a:options, l:items)
 endfunction
 
-function! asyncomplete#preprocess_complete(ctx, items)
+function! s:strip_pair_characters(base, item) abort
+    " Strip pair characters. If pre-typed text is '"', candidates
+    " should have '"' suffix.
+    let l:item = a:item
+    if has_key(s:pair, a:base[0])
+        let [l:lhs, l:rhs, l:str] = [a:base[0], s:pair[a:base[0]], l:item['word']]
+        if len(l:str) > 1 && l:str[0] ==# l:lhs && l:str[-1:] ==# l:rhs
+            let l:item = extend({}, l:item)
+            let l:item['word'] = l:str[:-2]
+        endif
+    endif
+    return l:item
+endfunction
+
+function! asyncomplete#preprocess_complete(ctx, items) abort
     " TODO: handle cases where this is called asynchronsouly. Currently not supported
     if s:should_skip() | return | endif
-    if s:should_skip_popup() | return | endif
 
     call asyncomplete#log('core', 'asyncomplete#preprocess_complete')
 

@@ -1,4 +1,7 @@
-let s:Snippet = vsnip#session#snippet#import()
+let s:Snippet = vsnip#snippet#import()
+let s:TextEdit = vital#vsnip#import('VS.LSP.TextEdit')
+let s:Position = vital#vsnip#import('VS.LSP.Position')
+let s:Diff = vital#vsnip#import('VS.LSP.Diff')
 
 "
 " import.
@@ -14,29 +17,40 @@ let s:Session = {}
 "
 function! s:Session.new(bufnr, position, text) abort
   return extend(deepcopy(s:Session), {
-        \   'bufnr': a:bufnr,
-        \   'buffer': getbufline(a:bufnr, '^', '$'),
-        \   'timer_id': -1,
-        \   'snippet': s:Snippet.new(a:position, self.indent(a:text)),
-        \   'tabstop': -1,
-        \   'changenr': changenr(),
-        \   'changenrs': {},
-        \ })
+  \   'bufnr': a:bufnr,
+  \   'buffer': getbufline(a:bufnr, '^', '$'),
+  \   'timer_id': -1,
+  \   'changedtick': getbufvar(a:bufnr, 'changedtick', 0),
+  \   'snippet': s:Snippet.new(a:position, vsnip#indent#adjust_snippet_body(getline('.'), a:text)),
+  \   'tabstop': -1,
+  \   'changenr': changenr(),
+  \   'changenrs': {},
+  \ })
 endfunction
 
 "
-" insert.
+" expand.
 "
-function! s:Session.insert() abort
+function! s:Session.expand() abort
   " insert snippet.
-  call vsnip#edits#text_edit#apply(self.bufnr, [{
-        \   'range': {
-        \     'start': self.snippet.position,
-        \     'end': self.snippet.position
-        \   },
-        \   'newText': self.snippet.text()
-        \ }])
+  call s:TextEdit.apply(self.bufnr, [{
+  \   'range': {
+  \     'start': self.snippet.position,
+  \     'end': self.snippet.position
+  \   },
+  \   'newText': self.snippet.text()
+  \ }])
   call self.store(changenr())
+endfunction
+
+"
+" merge.
+"
+function! s:Session.merge(session) abort
+  call a:session.expand()
+  call self.snippet.merge(self.tabstop, a:session.snippet)
+  call self.snippet.insert(deepcopy(a:session.snippet.position), a:session.snippet.children)
+  call s:TextEdit.apply(self.bufnr, self.snippet.sync())
 endfunction
 
 "
@@ -48,9 +62,6 @@ function! s:Session.jumpable(direction) abort
   else
     let l:jumpable = !empty(self.snippet.get_prev_jump_point(self.tabstop))
   endif
-  if !l:jumpable
-    call vsnip#deactivate()
-  endif
   return l:jumpable
 endfunction
 
@@ -58,6 +69,8 @@ endfunction
 " jump.
 "
 function! s:Session.jump(direction) abort
+  call self.flush_changes()
+
   if a:direction == 1
     let l:jump_point = self.snippet.get_next_jump_point(self.tabstop)
   else
@@ -65,7 +78,6 @@ function! s:Session.jump(direction) abort
   endif
 
   if empty(l:jump_point)
-    call vsnip#deactivate()
     return
   endif
 
@@ -75,35 +87,36 @@ function! s:Session.jump(direction) abort
   if len(l:jump_point.placeholder.choice) > 0
     call self.choice(l:jump_point)
 
-  " select.
+    " select.
   elseif l:jump_point.range.start.character != l:jump_point.range.end.character
     call self.select(l:jump_point)
 
-  " move.
+    " move.
   else
     call self.move(l:jump_point)
   endif
+
+  doautocmd <nomodeline> User vsnip#jump
 endfunction
 
 "
 " choice.
 "
 function! s:Session.choice(jump_point) abort
-  call cursor(a:jump_point.range.end.line + 1, a:jump_point.range.end.character + 1)
-  startinsert
+  call self.move(a:jump_point)
 
   let l:fn = {}
   let l:fn.jump_point = a:jump_point
   function! l:fn.next_tick() abort
-    let l:col = 0
-    let l:col += self.jump_point.range.end.character + 1
-    let l:col -= strlen(self.jump_point.placeholder.text())
-    call complete(l:col, map(copy(self.jump_point.placeholder.choice), { k, v -> {
-          \   'word': v.escaped,
-          \   'abbr': v.escaped,
-          \   'menu': '[vsnip]',
-          \   'kind': 'Choice'
-          \ } }))
+    if mode()[0] ==# 'i'
+      let l:pos = s:Position.lsp_to_vim('%', self.jump_point.range.start)
+      call complete(l:pos[1], map(copy(self.jump_point.placeholder.choice), { k, v -> {
+      \   'word': v.escaped,
+      \   'abbr': v.escaped,
+      \   'menu': '[vsnip]',
+      \   'kind': 'Choice'
+      \ } }))
+    endif
   endfunction
   call timer_start(g:vsnip_choice_delay, { -> l:fn.next_tick() })
 endfunction
@@ -111,28 +124,55 @@ endfunction
 "
 " select.
 "
+" @NOTE: Must work even if virtualedit=all/onmore or not.
+"
 function! s:Session.select(jump_point) abort
-  " `virtualedit=onemore` is restored by `plugin/vsnip.vim` before invoke `feedkeys` contents. (feedkeys is not synchronous.)
-  " So using `range.end.character` as inclusive position in here.
-  " Do not worry to first position of line, `select` has always have text.
-  call cursor(a:jump_point.range.end.line + 1, a:jump_point.range.end.character)
+  let l:pos = s:Position.lsp_to_vim('%', a:jump_point.range.end)
+  call cursor([l:pos[0], l:pos[1] - 1]) " Use `a:jump_point.range.end as inclusive position
+
   let l:select_length = strlen(a:jump_point.placeholder.text()) - 1
-  let l:cmd = mode()[0] ==# 'i' ? "\<Esc>l" : ''
-  if l:select_length > 0
-    let l:cmd .= printf('v%sh', l:select_length)
+  let l:cmd = ''
+  let l:cmd .= mode()[0] ==# 'i' ? "\<Esc>l" : ''
+  let l:cmd .= printf('v%s', l:select_length > 0 ? l:select_length . 'h' : '')
+  if get(g:, 'vsnip_test_mode', v:false)
+    let l:cmd .= "\<Esc>gvo\<C-g>" " Update `last visual selection` for getting it in test.
+    execute printf('normal! %s', l:cmd)
   else
-    let l:cmd .= 'v'
+    let l:cmd .= "o\<C-g>"
+    call s:feedkeys(l:cmd, 'n')
   endif
-  let l:cmd .= "\<C-g>"
-  call feedkeys(l:cmd, 'nt')
 endfunction
 
 "
 " move.
 "
+" @NOTE: Must work even if virtualedit=all/onmore or not.
+"
 function! s:Session.move(jump_point) abort
-  call cursor(a:jump_point.range.end.line + 1, a:jump_point.range.end.character + 1)
-  startinsert
+  let l:pos = s:Position.lsp_to_vim('%', a:jump_point.range.end)
+
+  call cursor(l:pos)
+
+  if l:pos[1] > strlen(getline(l:pos[0]))
+    startinsert!
+  else
+    startinsert
+  endif
+endfunction
+
+"
+" refresh
+"
+function! s:Session.refresh() abort
+  let self.buffer = getbufline(self.bufnr, '^', '$')
+  let self.changedtick = getbufvar(self.bufnr, 'changedtick', 0)
+endfunction
+
+"
+" on_insert_leave.
+"
+function! s:Session.on_insert_leave() abort
+  call self.flush_changes()
 endfunction
 
 "
@@ -158,56 +198,46 @@ function! s:Session.on_text_changed() abort
     endif
   endif
 
-  let l:fn = {}
-  function! l:fn.debounce(timer_id) abort
-    " compute diff.
-    let l:buffer = getbufline(self.bufnr, '^', '$')
-    let l:diff = vsnip#edits#diff#compute(self.buffer, l:buffer)
-    let self.buffer = l:buffer
-    if l:diff.rangeLength == 0 && l:diff.text ==# ''
-      return
-    endif
-
-    " text edit is out of range.
-    let l:range = self.snippet.range()
-    if l:diff.range.end.line < l:range.start.line || l:range.end.line < l:diff.range.start.line
-      call vsnip#deactivate()
-      return
-    endif
-    if l:diff.range.end.line == l:range.start.line && l:diff.range.end.character < l:range.start.character
-      call vsnip#deactivate()
-      return
-    endif
-    if l:diff.range.start.line == l:range.end.line && l:range.end.character < l:diff.range.start.character
-      call vsnip#deactivate()
-      return
-    endif
-
-    " snippet text is not changed.
-    if !self.is_dirty(l:buffer, l:diff)
-      return
-    endif
-
-    " if follow succeeded, sync placeholders and write back to the buffer.
-    if self.snippet.follow(self.tabstop, l:diff)
-      try
-        undojoin | call vsnip#edits#text_edit#apply(self.bufnr, self.snippet.sync())
-        let self.buffer = getbufline(self.bufnr, '^', '$')
-      catch /.*/
-        " TODO: More strict changenrs mangement.
-        call vsnip#deactivate()
-      endtry
-    else
-      call vsnip#deactivate()
-    endif
-  endfunction
-
-  " if delay is not zero, should debounce.
   if g:vsnip_sync_delay == 0
-    call call(l:fn.debounce, [0], self)
-  else
+    call self.flush_changes()
+  elseif g:vsnip_sync_delay > 0
     call timer_stop(self.timer_id)
-    let self.timer_id = timer_start(g:vsnip_sync_delay, function(l:fn.debounce, [], self), { 'repeat': 1 })
+    let self.timer_id = timer_start(g:vsnip_sync_delay, { -> self.flush_changes() }, { 'repeat': 1 })
+  endif
+endfunction
+
+"
+" flush_changes
+"
+function! s:Session.flush_changes() abort
+  let l:changedtick = getbufvar(self.bufnr, 'changedtick', 0)
+  if self.changedtick == l:changedtick
+    return
+  endif
+  let self.changedtick = l:changedtick
+
+  " compute diff.
+  let l:buffer = getbufline(self.bufnr, '^', '$')
+  let l:diff = s:Diff.compute(self.buffer, l:buffer)
+  let self.buffer = l:buffer
+  if l:diff.rangeLength == 0 && l:diff.text ==# ''
+    return
+  endif
+
+  " if follow succeeded, sync placeholders and write back to the buffer.
+  if self.snippet.follow(self.tabstop, l:diff)
+    try
+      let l:text_edits = self.snippet.sync()
+      if len(l:text_edits) > 0
+        undojoin | call s:TextEdit.apply(self.bufnr, l:text_edits)
+      endif
+      call self.refresh()
+    catch /.*/
+      " TODO: More strict changenrs mangement.
+      call vsnip#deactivate()
+    endtry
+  else
+    call vsnip#deactivate()
   endif
 endfunction
 
@@ -216,76 +246,34 @@ endfunction
 "
 function! s:Session.store(changenr) abort
   let self.changenrs[a:changenr] = {
-        \   'tabstop': self.tabstop,
-        \   'snippet': deepcopy(self.snippet)
-        \ }
+  \   'tabstop': self.tabstop,
+  \   'snippet': deepcopy(self.snippet)
+  \ }
 endfunction
 
-"
-" is_dirty.
-"
-function! s:Session.is_dirty(buffer, diff) abort
-  return self.snippet.text() !=# self.text_from_buffer(a:buffer, a:diff)
+inoremap <silent><expr> <Plug>(_vsnip-feedkeys-s) <SID>feedkeys_s()
+inoremap <silent><expr> <Plug>(_vsnip-feedkeys-e) <SID>feedkeys_e()
+nnoremap <silent><expr> <Plug>(_vsnip-feedkeys-s) <SID>feedkeys_s()
+nnoremap <silent><expr> <Plug>(_vsnip-feedkeys-e) <SID>feedkeys_e()
+xnoremap <silent><expr> <Plug>(_vsnip-feedkeys-s) <SID>feedkeys_s()
+xnoremap <silent><expr> <Plug>(_vsnip-feedkeys-e) <SID>feedkeys_e()
+snoremap <silent><expr> <Plug>(_vsnip-feedkeys-s) <SID>feedkeys_s()
+snoremap <silent><expr> <Plug>(_vsnip-feedkeys-e) <SID>feedkeys_e()
+function! s:feedkeys_s() abort
+  let s:selection = &selection
+  set selection=inclusive
+  return "\<Ignore>"
 endfunction
-
-"
-" text_from_buffer.
-"
-function! s:Session.text_from_buffer(buffer, diff) abort
-  let l:range = self.snippet.range()
-
-  if a:diff.range.end.line == l:range.end.line
-    let l:range.end.character = max([l:range.end.character, a:diff.range.end.character + strchars(a:diff.text)])
+function! s:feedkeys(keys, mode) abort
+  call feedkeys("\<Plug>(_vsnip-feedkeys-s)", '')
+  call feedkeys(a:keys, a:mode)
+  call feedkeys("\<Plug>(_vsnip-feedkeys-e)", '')
+endfunction
+function! s:feedkeys_e() abort
+  if exists('s:selection')
+    let &selection = s:selection
+    unlet s:selection
   endif
-
-  let l:text = ''
-  for l:i in range(l:range.start.line, l:range.end.line)
-    if len(a:buffer) <= l:i
-      return v:true
-    endif
-
-    " same line.
-    if l:i == l:range.start.line && l:i == l:range.end.line
-      let l:text = a:buffer[l:i][l:range.start.character : l:range.end.character - 1]
-      break
-
-    " multi start.
-    elseif l:i == l:range.start.line
-      let l:text .= a:buffer[l:i][l:range.start.character : - 1] . "\n"
-
-    " multi middle.
-    elseif l:i != l:range.end.line
-      let l:text .= a:buffer[l:i] . "\n"
-
-    " multi end.
-    elseif l:i == l:range.end.line
-      let l:text .= a:buffer[l:i][0 : l:range.end.character - 1]
-    endif
-  endfor
-
-  return l:text
-endfunction
-
-"
-" indent.
-"
-function! s:Session.indent(text) abort
-  let l:indent = !&expandtab ? "\t" : repeat(' ', &shiftwidth ? &shiftwidth : &tabstop)
-  let l:level = matchstr(getline('.'), '^\s*')
-  let l:text = s:normalize_eol(a:text)
-  let l:text = substitute(l:text, "\t", l:indent, 'g')
-  let l:text = substitute(l:text, "\n\\zs", l:level, 'g')
-  let l:text = substitute(l:text, "\n\\s*\\ze\\(\n\\|$\\)", "\n", 'g')
-  return l:text
-endfunction
-
-"
-" normalize_eol
-"
-function! s:normalize_eol(text) abort
-  let l:text = a:text
-  let l:text = substitute(l:text, "\r\n", "\n", 'g')
-  let l:text = substitute(l:text, "\r", "\n", 'g')
-  return l:text
+  return "\<Ignore>"
 endfunction
 

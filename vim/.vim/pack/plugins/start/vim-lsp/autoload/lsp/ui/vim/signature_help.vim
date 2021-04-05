@@ -6,7 +6,7 @@ function! s:not_supported(what) abort
 endfunction
 
 function! lsp#ui#vim#signature_help#get_signature_help_under_cursor() abort
-    let l:servers = filter(lsp#get_whitelisted_servers(), 'lsp#capabilities#has_signature_help_provider(v:val)')
+    let l:servers = filter(lsp#get_allowed_servers(), 'lsp#capabilities#has_signature_help_provider(v:val)')
 
     if len(l:servers) == 0
         call s:not_supported('Retrieving signature help')
@@ -115,7 +115,7 @@ endfunction
 function! s:on_cursor_moved() abort
     let l:bufnr = bufnr('%')
     call timer_stop(s:debounce_timer_id)
-    let s:debounce_timer_id = timer_start(500, function('s:on_text_changed_after', [l:bufnr]), { 'repeat': 1 })
+    let s:debounce_timer_id = timer_start(g:lsp_signature_help_delay, function('s:on_text_changed_after', [l:bufnr]), { 'repeat': 1 })
 endfunction
 
 function! s:on_text_changed_after(bufnr, timer) abort
@@ -132,7 +132,7 @@ function! s:on_text_changed_after(bufnr, timer) abort
     " Cache trigger chars since this loop is heavy
     let l:chars = get(b:, 'lsp_signature_help_trigger_character', [])
     if empty(l:chars)
-        for l:server_name in lsp#get_whitelisted_servers(a:bufnr)
+        for l:server_name in lsp#get_allowed_servers(a:bufnr)
             let l:chars += lsp#capabilities#get_signature_help_trigger_characters(l:server_name)
         endfor
         let b:lsp_signature_help_trigger_character = l:chars
@@ -147,6 +147,12 @@ function! lsp#ui#vim#signature_help#setup() abort
     augroup _lsp_signature_help_
         autocmd!
         autocmd CursorMoved,CursorMovedI * call s:on_cursor_moved()
+    augroup END
+endfunction
+
+function! lsp#ui#vim#signature_help#_disable() abort
+    augroup _lsp_signature_help_
+        autocmd!
     augroup END
 endfunction
 

@@ -23,6 +23,23 @@ in pure Vim Script.
 2. Options                                               *asyncomplete-options*
 
 
+g:asyncomplete_enable_for_all                   *g:asyncomplete_enable_for_all*
+
+    Type |Number|
+    Default: 1
+
+    Enable asyncomplete for all buffers. Can be overriden with
+    `b:asyncomplete_enable` on a per-buffer basis.  Setting this to 0 prevents
+    asyncomplete from loading upon entering a buffer.
+
+b:asyncomplete_enable                                   *b:asyncomplete_enable*
+
+    Type |Number|
+    Default: 1
+
+    Setting this variable to 0 disables asyncomplete for the current buffer
+    and overrides `g:asyncomplete_enable_for_all` .
+
 g:asyncomplete_auto_popup                           *g:asyncomplete_auto_popup*
 
     Type: |Number|
@@ -87,6 +104,25 @@ g:asyncomplete_preprocessor                        *g:asyncomplete_preprocessor*
 
     context and matches in arguments in preprecessor function should be treated
     as immutable.
+
+g:asyncomplete_min_chars                             *g:asyncomplete_min_chars*
+
+    Type: |Number|
+    Default: 1
+
+    Minimum consecutive characters to trigger auto-popup. Overridden by buffer
+    variable if set (`b:asyncomplete_min_chars`)
+
+g:asyncomplete_matchfuzzy                           *g:asyncomplete_matchfuzzy*
+
+    Type: |Number|
+    Default: `exists('*matchfuzzypos')`
+
+    Use |matchfuzzypos| to support fuzzy matching of 'word' when completing
+    items. Requires vim with `matchfuzzypos()` function to exists.
+
+    Set to `0` to disable fuzzy matching.
+
 ===============================================================================
 3. Functions                                            *asyncomplete-functions*
 

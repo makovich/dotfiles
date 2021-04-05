@@ -9,36 +9,77 @@ endfunction
 "
 " vsnip#source#find.
 "
-function! vsnip#source#find(filetype) abort
+function! vsnip#source#find(bufnr) abort
   let l:sources = []
-  let l:sources += vsnip#source#user_snippet#find(a:filetype)
-  let l:sources += vsnip#source#vscode#find(a:filetype)
+  let l:sources += vsnip#source#user_snippet#find(a:bufnr)
+  let l:sources += vsnip#source#vscode#find(a:bufnr)
   return l:sources
+endfunction
+
+"
+" vsnip#source#filetypes
+"
+function! vsnip#source#filetypes(bufnr) abort
+  let l:filetype = getbufvar(a:bufnr, '&filetype', '')
+  return split(l:filetype, '\.') + get(g:vsnip_filetypes, l:filetype, []) + ['global']
 endfunction
 
 "
 " vsnip#source#create.
 "
 function! vsnip#source#create(path) abort
-  let l:source = []
   try
     let l:file = readfile(a:path)
     let l:file = type(l:file) == type([]) ? join(l:file, "\n") : l:file
     let l:file = iconv(l:file, 'utf-8', &encoding)
-    for [l:label, l:snippet] in items(json_decode(l:file))
-      let [l:prefixes, l:prefixes_alias] = s:resolve_prefix(l:snippet.prefix)
-      call add(l:source, {
-            \   'label': l:label,
-            \   'prefix': l:prefixes,
-            \   'prefix_alias': l:prefixes_alias,
-            \   'body': type(l:snippet.body) == type([]) ? l:snippet.body : [l:snippet.body],
-            \   'description': get(l:snippet, 'description', '')
-            \ })
-    endfor
+    let l:json = json_decode(l:file)
+
+    if type(l:json) != type({})
+      throw printf('%s is not valid json.', a:path)
+    endif
   catch /.*/
+    let l:json = {}
+    echohl ErrorMsg
+    echomsg printf('[vsnip] Parsing error occurred on: %s', a:path)
+    echohl None
     echomsg string({ 'exception': v:exception, 'throwpint': v:throwpoint })
   endtry
+
+  " @see https://github.com/microsoft/vscode/blob/0ba9f6631daec96a2b71eeb337e29f50dd21c7e1/src/vs/workbench/contrib/snippets/browser/snippetsFile.ts#L216
+  let l:source = []
+  for [l:key, l:value] in items(l:json)
+    if s:is_snippet(l:value)
+      call add(l:source, s:format_snippet(l:key, l:value))
+    else
+      for [l:key, l:value_] in items(l:value)
+        if s:is_snippet(l:value_)
+          call add(l:source, s:format_snippet(l:key, l:value_))
+        endif
+      endfor
+    endif
+  endfor
   return sort(l:source, { a, b -> strlen(b.prefix[0]) - strlen(a.prefix[0]) })
+endfunction
+
+"
+" format_snippet
+"
+function! s:format_snippet(label, snippet) abort
+  let [l:prefixes, l:prefixes_alias] = s:resolve_prefix(a:snippet.prefix)
+  return {
+  \   'label': a:label,
+  \   'prefix': l:prefixes,
+  \   'prefix_alias': l:prefixes_alias,
+  \   'body': type(a:snippet.body) == type([]) ? a:snippet.body : [a:snippet.body],
+  \   'description': get(a:snippet, 'description', '')
+  \ }
+endfunction
+
+"
+" is_snippet
+"
+function! s:is_snippet(snippet_or_source) abort
+  return type(a:snippet_or_source) == type({}) && has_key(a:snippet_or_source, 'prefix') && has_key(a:snippet_or_source, 'body')
 endfunction
 
 "
@@ -58,14 +99,14 @@ function! s:resolve_prefix(prefix) abort
     call add(l:prefixes, l:prefix)
 
     " alias.
-    if l:prefix =~# '-'
+    if l:prefix =~# '^\h\w*\%(-\w\+\)\+$'
       call add(l:prefixes_alias, join(map(split(l:prefix, '-'), { i, v -> v[0] }), ''))
     endif
   endfor
 
   return [
-        \   sort(l:prefixes, { a, b -> strlen(b) - strlen(a) }),
-        \   sort(l:prefixes_alias, { a, b -> strlen(b) - strlen(a) })
-        \ ]
+  \   sort(l:prefixes, { a, b -> strlen(b) - strlen(a) }),
+  \   sort(l:prefixes_alias, { a, b -> strlen(b) - strlen(a) })
+  \ ]
 endfunction
 

@@ -100,10 +100,39 @@ let mapleader = "\<Space>"
 
 " From INSERT to NORMAL
 inoremap jj <Esc>
+inoremap оо <Esc>
 
 " Wrapped line is not the single one for motions
 nmap j gj
 nmap k gk
+
+" Hardmode
+noremap <Up> <Nop>
+noremap <Down> <Nop>
+noremap <Left> <Nop>
+noremap <Right> <Nop>
+
+" Take it easy
+inoremap <M-k> <Up>
+inoremap <M-j> <Down>
+inoremap <M-h> <Left>
+inoremap <M-l> <Right>
+inoremap <M-H> <C-o>B
+inoremap <M-L> <C-o>W
+" ru equivalent
+inoremap <M-л> <Up>
+inoremap <M-о> <Down>
+inoremap <M-р> <Left>
+inoremap <M-д> <Right>
+inoremap <M-р> <C-o>B
+inoremap <M-д> <C-o>W
+
+" Who's saying emacs?!
+inoremap <C-a> <C-o>0
+inoremap <C-e> <C-o>$
+inoremap <C-d> <C-o>x
+inoremap <C-w> <C-o>cb
+imap     <C-j> <Cr>
 
 " vim-sneak
 map f <Plug>Sneak_f
@@ -115,14 +144,15 @@ map <Plug>SwallowSneak_s <Plug>Sneak_s
 map <Plug>SwallowSneak_S <Plug>Sneak_S
 
 " incsearch
-map / <Plug>(incsearch-forward)
-map ? <Plug>(incsearch-backward)
+map  /       <Plug>(incsearch-forward)
+map  ?       <Plug>(incsearch-stay)<C-R><C-W>
+nmap <S-Tab> <Plug>(incsearch-stay)<C-R><C-W>
 
-" qq - record macro
+" qq - record macro `q`
 " q  - quit recording
-" Q  - play recorded
-nnoremap Q @q
-vnoremap Q :norm @q<cr>
+" leader+q  - play recorded
+nnoremap <Leader>q @q
+vnoremap <Leader>q :norm @q<CR>
 
 " Marks should go to the column, not just the line. Why isn't this the default?
 nnoremap ' `
@@ -130,14 +160,14 @@ nnoremap ' `
 " Previous buffer
 nmap <Leader>; :e#<CR>
 
-" scratch.vim
-nmap <Leader><Space> :Scratch<CR>
-
 " Close the buffer, don't close the window (bufkill.vim)
 nmap <Leader>Q :BD<CR>
 
-" Space-q close the window
-nmap <Leader>q :q!<CR>
+" Shift-q closes the window
+nmap Q :q!<CR>
+
+" Write file
+nmap <Leader>w :update<CR>
 
 " Zoom (or only one opened window)
 nmap <Leader>z <C-w>o
@@ -154,9 +184,35 @@ nmap <Leader><Bar> <C-w>v
 nmap <Leader>j <C-w><C-w>
 nmap <Leader>k <C-w>W
 
+" Lookups
+nmap <Leader>f :Fls!<CR>
+nmap <Leader>o :Outline!<CR>
+nmap <Leader>g :Rgp!<CR>
+nmap <Leader>t :FZFTags!<CR>
+nmap <M-/>     :Rg<Space><C-R>=expand("<cword>")<CR>
+
 " Move block in visual mode
 vnoremap J :m '>+1<CR>gv=gv
 vnoremap K :m '<-2<CR>gv=gv
+vnoremap > >gv
+vnoremap < <gv
+
+" Tags navigation
+nmap <M-]> mO:exec "ltag " . expand("<cword>")<CR>:lopen<CR>
+nmap <M-t> :lclose<CR>:silent! exec '20pop'<CR>:normal! `O<CR>
+nmap gt <M-]>
+
+" VSCode-like comment (Ctrl+/)
+nmap <C-_> :Commentary<CR>
+vmap <C-_> :Commentary<CR>
+imap <C-_> <Esc>:Commentary<CR>i
+
+" Bookmarks
+noremap 'D :Fls! ~/dotfiles<CR>
+noremap 'M :Fls! ~/mem<CR>
+
+" Poorman's Auto-save
+" autocmd InsertLeave,CursorHold * update
 
 filetype on
 filetype plugin on
@@ -170,7 +226,7 @@ set backspace=2
 set clipboard=unnamedplus
 set completeopt=longest,menuone,noinsert
 set concealcursor=niv
-set conceallevel=2
+set conceallevel=0
 set copyindent
 set cursorline
 set expandtab
@@ -188,13 +244,14 @@ set listchars=tab:·\ ,trail:•
 set matchtime=2
 set modelines=0
 set nomodeline
-" silent! set mouse=nvc
+set mouse=nia
+set mousemodel=popup
 set nobackup
 set nofoldenable
 set noshowmode
 set nowrap
 set number
-set scrolloff=15
+" set scrolloff=15
 set selection=old
 set shiftwidth=2
 set shortmess+=c
@@ -208,43 +265,6 @@ set undodir=~/.vim/.undodir
 set undofile
 set updatetime=300
 set visualbell t_vb=
-
-" vim-xkbswitch
-if has('macunix')
-  let g:XkbSwitchLib = '/usr/local/lib/libInputSourceSwitcher.dylib'
-  let g:XkbSwitchEnabled = 1
-endif
-
-" Hardmode
-noremap <Up> <Nop>
-noremap <Down> <Nop>
-noremap <Left> <Nop>
-noremap <Right> <Nop>
-inoremap <Up> <Nop>
-inoremap <Down> <Nop>
-inoremap <Left> <Nop>
-inoremap <Right> <Nop>
-
-" Mode dependent cursor shape
-" http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
-if empty($TMUX)
-  let &t_SI = "\<Esc>]50;CursorShape=1\x7"
-  let &t_EI = "\<Esc>]50;CursorShape=0\x7"
-  let &t_SR = "\<Esc>]50;CursorShape=2\x7"
-else
-  let &t_SI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=1\x7\<Esc>\\"
-  let &t_EI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=0\x7\<Esc>\\"
-  let &t_SR = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=2\x7\<Esc>\\"
-endif
-
-" https://unix.stackexchange.com/questions/433273/changing-cursor-style-based-on-mode-in-both-zsh-and-vim
-" p.s.: looks like with auto-pairs plugin this makes things worst
-" autocmd VimEnter * silent exec "! echo -ne '\e[1 q\n'"
-" autocmd VimLeave * silent exec "! echo -ne '\e[5 qbye'"
-
-" Poorman's Auto-save
-" autocmd InsertLeave,CursorHold * update
-nmap <Leader>w :update<CR>
 
 augroup VimTune
   au!
@@ -268,23 +288,35 @@ augroup VimTune
   au FileType qf setlocal number nolist
 
   " Quickview open & move through matches
-  au FileType qf nmap <buffer> <silent> p <CR><C-w>p
-  au FileType qf nmap <buffer> <silent> <C-J> j<CR><C-w>p
-  au FileType qf nmap <buffer> <silent> <C-K> k<CR><C-w>p
-  au FileType qf nmap <buffer> <silent> <Leader>F :cclose<CR>:normal! `O<CR>
-
-  au FileType GV nmap <buffer> <silent> J jo
-  au FileType GV nmap <buffer> <silent> K ko
+  au FileType qf nmap <buffer> <silent> j j<CR><C-w>p
+  au FileType qf nmap <buffer> <silent> k k<CR><C-w>p
+  au FileType qf nmap <buffer> <silent> <C-O> :close<CR>:normal! `O<CR>
 
   " Allow save crontabs
   au filetype crontab setlocal nobackup nowritebackup
+
+  " Allow tabs in shell scripts
+  au filetype sh setlocal noexpandtab
 augroup END
+
+" vim-xkbswitch
+if has('macunix')
+  let g:XkbSwitchLib = '/usr/local/lib/libInputSourceSwitcher.dylib'
+  let g:XkbSwitchEnabled = 1
+endif
+
+" vim-markdown
+let g:markdown_syntax_conceal = 0
+let g:markdown_fenced_languages = ['html', 'css', 'xml', 'vim', 'lua', 'c', 'sh', 'rust']
 
 " auto-pairs
 " https://github.com/jiangmiao/auto-pairs/pull/266
-let g:AutoPairsMapCh = 0
+let g:AutoPairsMapCh = 1
 let g:AutoPairsShortcutJump = '<C-L>'
 let g:AutoPairsShortcutFastWrap = '<C-S>'
+
+" incsearch
+let g:incsearch_cli_key_mappings = { '\<C-j>': '\<CR>' }
 
 " asyncomplete.vim
 augroup Completions
@@ -316,9 +348,14 @@ augroup Completions
   let g:vsnip_choice_delay = 1000
   let g:vsnip_sync_delay = 0
 
-  imap <expr> <C-j> pumvisible() ? "\<C-n>"  : "\<C-j>"
-  imap <expr> <C-k> pumvisible() ? "\<C-p>"  : "\<C-k>"
+  let g:vsnip_integ_config = {
+        \ 'asyncomplete': v:true
+        \ }
+
+  " imap <expr> <C-j> pumvisible() ? "\<C-n>"  : "\<C-j>"
+  " imap <expr> <C-k> pumvisible() ? "\<C-p>"  : "\<C-k>"
   imap <expr> <Cr>  pumvisible() ? "\<Esc>a" : "\<Cr>"
+  imap <C-n> <Plug>(asyncomplete_force_refresh)
 
   imap <expr> <Tab> vsnip#available(1) ? "\<Plug>(vsnip-expand-or-jump)" : "\<Tab>"
   smap <expr> <Tab> vsnip#available(1) ? "\<Plug>(vsnip-expand-or-jump)" : "\<Tab>"
@@ -347,177 +384,90 @@ augroup Rust
   " Set tags source for Rust
   au BufRead *.rs :setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
   au BufWritePost *.rs :silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . "&" | redraw!
+  au BufWritePre *.rs call execute('LspDocumentFormatSync')
 augroup END
-
-" VSCode-like comment (Ctrl+/)
-nmap <C-_> :Commentary<CR>
-vmap <C-_> :Commentary<CR>
-imap <C-_> <Esc>:Commentary<CR>i
-
-" spell (replace misspelled with first alternative suggestion)
-imap <C-F> <C-G>u<Esc>[s1z=`]a<C-G>u
-
-" Zen mode
-augroup Goyo
-  au!
-
-  nmap \z mt:Goyo<CR>'tzz
-
-  let g:goyo_height=100
-  let g:goyo_width=100
-
-  function! s:goyo_enter()
-    set signcolumn=no
-    set noshowmode
-    set noshowcmd
-    set wrap
-    hi! Normal       ctermbg=233
-    hi! VertSplit    ctermbg=233 ctermfg=233
-    hi! StatusLine   ctermbg=233 ctermfg=233
-    hi! StatusLineNC ctermbg=233 ctermfg=233
-    hi! EndOfBuffer  ctermbg=233 ctermfg=233
-    if exists('$TMUX')
-      silent !tmux set status off
-    endif
-  endfunction
-
-  function! s:goyo_leave()
-    hi! EndOfBuffer  ctermbg=0 ctermfg=0
-    hi! StatusLineNC ctermbg=0 ctermfg=NONE
-    hi! StatusLine   ctermbg=0 ctermfg=0
-    hi! VertSplit    ctermbg=0 ctermfg=233
-    hi! Normal       ctermbg=0
-    set nowrap
-    set showcmd
-    set showmode
-    set signcolumn=auto
-    if exists('$TMUX')
-      silent !tmux set status on
-    endif
-  endfunction
-
-  au User GoyoEnter nested call <SID>goyo_enter()
-  au User GoyoLeave nested call <SID>goyo_leave()
-augroup END
-
-" Codi
-let g:codi#interpreters = {
-      \ 'javascript': {
-      \   'bin': 'qjs',
-      \   'prompt': '^\(qjs >\|{\+  \.\.\.\) ',
-      \   'quitcmd': '\q',
-      \   'rightalign': 0,
-      \ }}
 
 " grep with ripgrep
 if executable('rg')
   set grepprg=rg\ --vimgrep\ --color=never
 
-  " Additionally ignore Rust tags file
-  let g:rg_command = 'rg --vimgrep --glob "!rusty-tags.vi"'
+  " vim-ripgrep
+  let g:rg_command = 'rg --vimgrep --hidden --glob "!rusty-tags.vi"'
 endif
-
-" fzf
-let g:fzf_command_prefix = 'FZF'
-let g:fzf_layout = { 'down': '15' }
-let g:fzf_mru_exclude = '.*fugitiveblame'
-
-nmap <C-P> :Fls<CR>
-nmap <Leader>f :Rgp!<CR>
-nmap <Leader>F mO:Rg <cword><CR>
-nmap <Leader>p :FZFMru<CR>
-nmap <Leader>o :Outline!<CR>
-
-command! -bang -nargs=? -complete=dir Rgp
-    \ call fzf#run(fzf#wrap('GrepPreview', {
-    \     'source': 'rg --hidden --line-number --glob "!.git/" --glob "!rusty-tags.vi"' . ( len(<q-args>) == 0 ? " ." : " . " . shellescape(<q-args>) ),
-    \     'sink': function('GoToLine', [':']),
-    \     'options': ['--query=' . expand("<cword>"),
-    \                 '--layout=reverse',
-    \                 '--delimiter=:', '--nth=3',
-    \                 '--color=16', '--inline-info', '--prompt=Rg> ',
-    \                 '--cycle', '--bind=alt-h:toggle-preview',
-    \                 '--preview-window=right:65%',
-    \                 '--preview=bat --style=numbers --color=always --line-range={2}: {1}'] },
-    \   <bang>0))
-
-command! -bang -nargs=? -complete=dir Fls
-    \ call fzf#run(fzf#wrap('CtrlP',
-    \   fzf#vim#with_preview({
-    \     'source': 'fd --type=file --max-depth=40 --hidden --exclude=.git --follow' . ( len(<q-args>) == 0 ? " ." : " . " . shellescape(<q-args>) ),
-    \     'options': '--no-sort --color=16 --cycle --inline-info --prompt=' }, 'right:70%:hidden', 'alt-h'),
-    \   <bang>0))
-
-function! GoToLine(delim, line)
-  if a:delim ==# ':'
-    let l:match = split(a:line, a:delim)
-    let l:filename = l:match[0]
-    let l:line_no = l:match[1]
-    exec 'edit +' . l:line_no . ' ' . l:filename
-  else
-    let l:line_no = split(a:line, a:delim)[0]
-    exec ':' . line_no
-  end
-endf
-
-command! -bang Outline
-    \ call fzf#run(fzf#wrap('Outline', {
-    \     'source': "ctags -f - --sort=foldcase --file-scope=no --all-kinds=* --fields=Kn " . expand('%:p') .
-    \               ' | grep -F "/;\""'.
-    \               " | awk -F $'\t' ".
-    \               "'".
-    \               '   BEGIN { OFS=FS }'.
-    \               '         {'.
-    \               '           gsub(/implementation/, "impl", $4);'.
-    \               '           gsub(/\/\^[ ]*/, "", $3);'.
-    \               '           gsub(/[; {]*\$\/;"$/, "", $3);'.
-    \               '           gsub(/line:/, "", $5);'.
-    \               '           printf "%4d\t%12s  %-31s\t%s\n", $5, $4, $1, $3;'.
-    \               "         }'".
-    \               " | sort -bk2,2",
-    \     'sink': function('GoToLine', ['\t']),
-    \     'options': ['--layout=reverse', '--no-sort',
-    \                 '--delimiter=\t', '--nth=3',
-    \                 '--color=16', '--inline-info', '--prompt=Outline> ',
-    \                 '--cycle', '--bind=alt-h:toggle-preview',
-    \                 '--preview-window=right:65%:hidden',
-    \                 '--preview=bat --style=numbers --color=always --line-range={1}: ' . expand('%:p')] },
-    \   <bang>0))
 
 augroup Fzf
   au! FileType fzf
+
+  let g:fzf_command_prefix = 'FZF'
+  let g:fzf_layout = { 'down': '15' }
+
+  function! GoToLine(delim, line)
+    if a:delim ==# ':'
+      let l:match = split(a:line, a:delim)
+      let l:filename = l:match[0]
+      let l:line_no = l:match[1]
+      exec 'edit +' . l:line_no . ' ' . l:filename
+    else
+      let l:line_no = split(a:line, a:delim)[0]
+      exec ':' . line_no
+    end
+  endf
+
+  command! -bang -nargs=? -complete=dir Rgp
+        \ call fzf#run(fzf#wrap({
+        \     'source': 'rg --hidden --line-number --glob "!.git/" --glob "!rusty-tags.vi"' . ( len(<q-args>) == 0 ? " ." : " . " . shellescape(<q-args>) ),
+        \     'sink': function('GoToLine', [':']),
+        \     'options': ['--layout=reverse',
+        \                 '--delimiter=:', '--nth=3',
+        \                 '--color=16', '--inline-info', '--prompt=Rg> ',
+        \                 '--cycle',
+        \                 '--preview-window=right:65%:+{2}-/2',
+        \                 '--preview=bat --style=numbers --color=always --highlight-line={2} {1}'] },
+        \   <bang>0))
+
+  command! -bang -nargs=? -complete=dir Fls
+        \ call fzf#run(fzf#wrap({
+        \     'source': 'fd --color=always --type=file --max-depth=40 --hidden --exclude=.git --follow' . ( len(<q-args>) == 0 ? " ." : " . " . shellescape(<q-args>) ),
+        \     'options': ['--header= ', '--layout=reverse',
+        \                 '--ansi', '--color=16', '--inline-info', '--prompt=',
+        \                 '--cycle',
+        \                 '--preview-window=right:65%',
+        \                 '--preview=bat --style=numbers --color=always {1}'] },
+        \   <bang>0))
+
+  command! -bang Outline
+        \ call fzf#run(fzf#wrap({
+        \     'source': "ctags -f - --sort=foldcase --file-scope=no --all-kinds=* --fields=Kn " . expand('%:p') .
+        \               ' | grep -F "/;\""'.
+        \               " | awk -F $'\t' ".
+        \               "'".
+        \               '   BEGIN { OFS=FS }'.
+        \               '         {'.
+        \               '           gsub(/implementation/, "impl", $4);'.
+        \               '           gsub(/\/\^[ ]*/, "", $3);'.
+        \               '           gsub(/[; {]*\$\/;"$/, "", $3);'.
+        \               '           gsub(/line:/, "", $5);'.
+        \               '           printf "%d\t%12s  %-31s\t%s\n", $5, $4, $1, $3;'.
+        \               "         }'".
+        \               " | sort -bk2,2",
+        \     'sink': function('GoToLine', ['\t']),
+        \     'options': ['--layout=reverse', '--no-sort',
+        \                 '--delimiter=\t', '--nth=3',
+        \                 '--color=16', '--inline-info', '--prompt=Outline> ',
+        \                 '--cycle',
+        \                 '--preview-window=right:65%:hidden:+{1}-/2',
+        \                 '--preview=bat --style=numbers --color=always --highlight-line={1} ' . expand('%:p')] },
+        \   <bang>0))
+
   au  FileType fzf set laststatus=0 showtabline=0 noshowmode noruler
-  \| autocmd BufLeave <buffer> set laststatus=2 showtabline=1 showmode ruler
+        \| autocmd BufLeave <buffer> set laststatus=2 showtabline=1 showmode ruler
 augroup END
 
-" Prevent ack's output leakage
-" https://github.com/mileszs/ack.vim/issues/18
-" function AckRun(string) abort
-"  let saved_shellpipe = &shellpipe
-"  let &shellpipe = '>'
-"  try
-"    execute 'Ack! \\b' . shellescape(a:string, 1) . '\\b'
-"  finally
-"    let &shellpipe = saved_shellpipe
-"  endtry
-"endfunction
-
-" Tell ack.vim to use ripgrep instead
-" let g:ackprg = 'rg --vimgrep --no-heading'
-
-" Tags navigation
-nmap <M-]> mO:exec "ltag " . expand("<cword>")<CR><C-t>:lopen<CR>
-nmap <M-t> :lclose<CR>:silent! exec '20pop'<CR>:normal! `O<CR>
-nmap <Leader>t <M-]>
-nmap <Leader>T <M-t>
-nmap gt :pop<CR>
-
-" vim-lsp
 augroup Lsp
   au!
 
   let g:lsp_virtual_text_enabled = 1
-  let g:lsp_virtual_text_prefix = ' ■ '
+  let g:lsp_virtual_text_prefix = " ‣ "
   let g:lsp_highlights_enabled = 1
   let g:lsp_textprop_enabled = 1
   let g:lsp_signs_enabled = 1
@@ -525,16 +475,18 @@ augroup Lsp
   let g:lsp_diagnostics_float_cursor = 0
   let g:lsp_highlight_references_enabled = 1
   let g:lsp_preview_keep_focus = 1
-  let g:lsp_signs_error = { 'text': '✕' }
-  let g:lsp_signs_warning = { 'text': '！' }
-  let g:lsp_signs_information = { 'text': 'ℹ' }
+  let g:lsp_diagnostics_signs_error = { 'text': '✕' }
+  let g:lsp_diagnostics_signs_warning = { 'text': '！' }
+  let g:lsp_diagnostics_signs_information = { 'text': 'ℹ' }
+  let g:lsp_document_code_action_signs_enabled = 0
 
   au BufWritePre <buffer> LspDocumentFormatSync
 
   au User lsp_server_init nmap K  <plug>(lsp-hover)
-  au User lsp_server_init nmap gd <plug>(lsp-definition)
-  au User lsp_server_init nmap gr <plug>(lsp-references)
-  au User lsp_server_init nmap gR <plug>(lsp-rename)
+  au User lsp_server_init nmap gD <plug>(lsp-definition)
+  au User lsp_server_init nmap gR <plug>(lsp-references)
+  au User lsp_server_init nmap gM <plug>(lsp-rename)
+  au User lsp_server_init nmap gA <plug>(lsp-code-action)
   au User lsp_server_init nmap ]w <plug>(lsp-next-diagnostic)
   au User lsp_server_init nmap [w <plug>(lsp-previous-diagnostic)
 
