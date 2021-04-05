@@ -101,7 +101,7 @@ hi def VimwikiHeader6       ctermfg=237               cterm=bold
 let s:mode_fg =  [ '#FFFFFF', 231 ]
 let s:mode_bg =  [ '#E4E4E4', 235 ]
 let s:base1_fg = [ '#3A3A3A', 237 ]
-let s:base1_bg = [ '#000000',   0 ]
+let s:base1_bg = [ '#000000', 233 ]
 let s:base2_fg = [ '#808080', 244 ]
 let s:base2_bg = [ '#121212', 233 ]
 let s:base3_fg = [ '#262626', 235 ]
