@@ -6,4 +6,4 @@ export HISTFILE=~/.zhistory
 export HISTSIZE=50000
 export SAVEHIST=50000
 
-export KEYTIMEOUT=15
+export KEYTIMEOUT=35

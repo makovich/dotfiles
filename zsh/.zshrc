@@ -1,88 +1,83 @@
+# zmodload zsh/zprof
+
 # Syntax
 source ~/.zsh/fsh/fast-syntax-highlighting.plugin.zsh
+
+# Gives us access to ^Q
+# via https://github.com/thoughtbot/dotfiles/blob/21055dff633feea87bc9526efb5b2fcc04bc025e/zsh/configs/keybindings.zsh
+stty -ixon
 
 # Prompt
 # setopt prompt_subst
 psvar[1]=${SSH_CONNECTION:-}
 PROMPT="%(1V.%M .)%(1j.%(?.%B%K{2}%F{16}.%B%K{1}%F{16}).%(?.%F{2}.%F{1}))%(!.#.$)%k%f%b "
-RPROMPT="%F{242}%~%f %B%K{242}%F{232} %n@%m %f%k%b"
+RPROMPT="%F{242}%~%f"
 
 zle-keymap-select() {
-  if [[ ${KEYMAP} == vicmd ]]; then
-    echo -ne '\e[2 q'
-  elif [[ ${KEYMAP} == main ]] || [[ ${KEYMAP} == viins ]] || [[ ${KEYMAP} = '' ]]; then
-    echo -ne '\e[6 q'
-  fi
+  # 0 -> blinking block.
+  # 1 -> blinking block (default).
+  # 2 -> steady block.
+  # 3 -> blinking underline.
+  # 4 -> steady underline.
+  # 5 -> blinking bar (xterm).
+  # 6 -> steady bar (xterm).
+  printf '\e[%s q' ${${KEYMAP/vicmd/2}/(main|viins)/6}
 }
 zle -N zle-keymap-select
 
 zle-line-init() {
   zle reset-prompt
-  echo -ne '\e[6 q'
+  zle zle-keymap-select
 }
 zle -N zle-line-init
 
-
-# Share commands history between shell instances
-setopt share_history
-
-# Record command every time
-setopt inc_append_history
-
-# Allow commenting commands out
-setopt interactivecomments
-
-# Give us access to ^Q
-# via https://github.com/thoughtbot/dotfiles/blob/21055dff633feea87bc9526efb5b2fcc04bc025e/zsh/configs/keybindings.zsh
-stty -ixon
-
 # Vi
 bindkey -v
+
+# Vi normal mode
+bindkey -s "jj" "^["
 
 # Edit in $EDITOR
 autoload -Uz edit-command-line
 zle -N edit-command-line
 bindkey -M vicmd "v" edit-command-line
 
-# Freeing vi-mode forward/reverse history search
-bindkey -r "^[/"
-bindkey -r "^[,"
-
 # Emacs
 bindkey "^A" beginning-of-line
+bindkey "^W" backward-kill-word
 bindkey "^E" end-of-line
 bindkey "^Y" yank
-# 1) replcae with fuzzy-hs      "^R" redisplay // in default viins
-# 2) replace / with fuzzy-hs    "/" vi-history-search-backward
-# 3) if no hs found do fallback
-# bindkey "^R" history-incremental-search-backward
+bindkey "^D" delete-char
+bindkey "^H" backward-delete-char
+bindkey "^C" kill-buffer
 
-skim-history-search() {
-  local cmd
-  cmd=$(fc -lnr 1 | sk) || return
-  LBUFFER="${LBUFFER}${cmd}"
-  zle reset-prompt
-}
-zle -N skim-history-search
-bindkey "^R" skim-history-search
+# This mimics to vicmd in ins mode
+bindkey "^[h" backward-char
+bindkey "^[l" forward-char
 
 # Smart history lookup
 autoload -U up-line-or-beginning-search
-zle -N up-line-or-beginning-search
-bindkey "^[[A" up-line-or-beginning-search
-bindkey "^[OA" up-line-or-beginning-search
-bindkey -M vicmd "k" up-line-or-beginning-search
-
 autoload -U down-line-or-beginning-search
+zle -N up-line-or-beginning-search
 zle -N down-line-or-beginning-search
-bindkey "^[[B" down-line-or-beginning-search
-bindkey "^[OB" down-line-or-beginning-search
-bindkey -M vicmd "j" down-line-or-beginning-search
+bindkey "^P" up-line-or-beginning-search
+bindkey "^N" down-line-or-beginning-search
 
 # Repeat last command
-bindkey -M vicmd -s '.' '^P^M'
-bindkey -M vicmd -s "^K" "^P^M"
-bindkey -s "^K" "^[[A^M"
+bindkey -M vicmd -s "." "^P^M"
+bindkey          -s "^K" "^[[A^M"
+
+# Marks
+bindkey -M vicmd -s "'h" "ddicd^M"
+bindkey -M vicmd -s "'d" "ddicd ~/dotfiles^M"
+bindkey -M vicmd -s "'D" "ddicd ~/dotfiles^Mfd^M"
+bindkey -M vicmd -s "'w" "ddicd ~/warc^M"
+bindkey -M vicmd -s "'W" "ddicd ~/warc^Mrg^M"
+bindkey -M vicmd -s "'m" "ddicd ~/mem^M"
+bindkey -M vicmd -s "'c" "ddicd ~/code^M"
+
+# Midnight Commander
+bindkey -s "^O" "mc^M"
 
 # Do show hidden files
 setopt globdots
@@ -112,6 +107,20 @@ setopt complete_in_word
 # Move cursor to the end of a completed word
 setopt always_to_end
 
+# HISTORY_IGNORE="(ls|cd|pwd|exit|cd ..)"
+
+# Write session history after exit
+setopt append_history
+
+# Remove commands starting from space from history
+setopt hist_ignore_space
+
+# Allow comments in the commmand line
+setopt interactive_comments
+
+# cd acts as pushd
+setopt autopushd
+
 # Completions
 # autoload -Uz compinit
 # compinit -i
@@ -139,3 +148,5 @@ setopt always_to_end
 # zstyle ':completion:*:manuals' separate-sections true
 # zstyle ':completion:*:manuals.*' insert-sections true
 # zstyle ':completion:*:man:*' menu select
+
+# zprof
