@@ -1,62 +1,54 @@
 alias v=$EDITOR
+alias c="$(test -x `command -v bat` >/dev/null 2>&1 && echo -n bat || echo -n cat)"
+alias l="ls -alFh `ls --color >/dev/null 2>&1 && echo -n '--color' || echo -n '-G'`"
+alias x=xargs
 
-[ -x "$(command -v bat)" ] && alias c="bat" || alias c="cat"
-
-if ls --color >/dev/null 2>&1; then # GNU `ls`
-  colorflag="--color"
-else # macOS `ls`
-  colorflag="-G"
-fi
-alias l="ls -alFh ${colorflag}"
-
-alias g=git
-alias     ..="cd .."
-alias    ...="cd ../.."
-alias   ....="cd ../../.."
-alias  .....="cd ../../../.."
-alias ......="cd ../../../../.."
-
+alias mc="MC_XDG_OPEN=$([ `uname` = Darwin ] && echo -n open) mc"
+alias gg=lg
 alias br=broot
-alias cls=clear
-alias skrg="sk \
-              --ansi \
-              --delimiter=: \
-              --no-multi \
-              --interactive \
-              --preview='bat --color=always --style=numbers {1}' \
-              --cmd 'rg \"{}\" \
-              --hidden \
-              --glob=\"!.git/\" --glob=\"!rusty-tags.vi\" \
-              --color=always \
-              --line-number' \
-              | cut -f1,2 -d':' \
-              | sed 's/:/ \+/g' \
-              | xargs -I{} sh -c '</dev/tty $EDITOR {}'"
+alias www="python3 -m http.server 8080"
+alias tmp="cd `mktemp -d /tmp/tmp_XXXX`"
 
-# mark off "use internal viewer" in the mc configuration
-alias mc="TERM=tmux-256color BAT_PAGER='less -R' PAGER=bat mc"
+m() {
+  pushd $HOME/mem
 
-mem() {
-  local note
-  pushd $HOME/mkvch
-  note=$(sk)
-  $EDITOR ${note:-"+Scratch"}
+  if [ -n "$1" ]; then
+    $EDITOR "$1"
+    popd
+    return 0
+  fi
+
+  # 1. esc
+  #    $?=130
+  # 2. ctrl-j
+  #    qry=
+  #    sel=first_item
+  # 3. ctrl-j
+  #    qry=asdf
+  #    sel=am-sa-do-fi
+  # 4. ctrl-j
+  #    qry=newfile.md
+  res=$(sk --print-query)
+  if [ $? -eq 130 ]; then
+    popd
+    return 0
+  fi
+
+  qry=$(echo $res | sed -n 1p)
+  sel=$(echo $res | sed -n 2p)
+
+  if [ -z "$sel" ]; then
+    $EDITOR $qry
+  else
+    $EDITOR $sel
+  fi
+
   popd
 }
 
-curltime() {
-    curl -so /dev/null -w "\
-   namelookup:  %{time_namelookup}s\n\
-      connect:  %{time_connect}s\n\
-   appconnect:  %{time_appconnect}s\n\
-  pretransfer:  %{time_pretransfer}s\n\
-     redirect:  %{time_redirect}s\n\
-starttransfer:  %{time_starttransfer}s\n\
-                ------\n\
-        total:  %{time_total}s\n" "$@"
-}
-
-_warc() {
+warc() {
+  pushd
+  cd $HOME/warc
   wget \
     --page-requisites \
     --convert-links \
@@ -66,42 +58,36 @@ _warc() {
     --no-if-modified-since \
     --no-check-certificate \
     --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36" \
-    $@
-}
-
-warc() {
-  pushd
-  cd $HOME/mkvch/warc
-  _warc "$1"
+    "$@"
   popd
 }
 
-warcs() {
-  pushd
-  cd $HOME/mkvch/warc
-  _warc --mirror $@
-  popd
+warcall() {
+  warc --mirror "$1"
 }
 
-# Usage: codi [filetype] [filename]
-codi() {
-  local syntax="${1:-javascript}"
-  shift
-  nvim -c \
-    "let g:startify_disable_at_vimenter = 1 |\
-    let g:codi#width = 40.0 |\
-    set bt=nofile ls=0 noru nonu nornu |\
-    hi ColorColumn ctermbg=NONE |\
-    hi VertSplit ctermbg=NONE |\
-    hi NonText ctermfg=0 |\
-    Codi $syntax" "$@"
+fd() {
+  if [ $# -gt 0 ]; then
+    command fd "$@"
+  else
+    sk | xargs $EDITOR
+  fi
 }
 
 rg() {
   if [ $# -gt 0 ]; then
-    $HOME/.cargo/bin/rg "$@"
+    command rg "$@"
   else
-    skrg
+    sk \
+      --ansi \
+      --delimiter=':' \
+      --no-multi \
+      --interactive \
+      --preview='bat --color=always --style=numbers {1} --highlight-line {2}' \
+      --cmd 'rg "{}" --hidden --color=always --ignore-case --line-number' \
+      | cut -f1,2 -d':' \
+      | sed 's/:/ \+/g' \
+      | xargs -I{} sh -c '</dev/tty $EDITOR {}'
   fi
 }
 
@@ -122,10 +108,10 @@ tm() {
 }
 
 ffh() {
-  ff 'history'
+  ffb 'history'
 }
 
-ff() {
+ffb() {
   local cols sep ff_db_file open
   cols=$(( COLUMNS / 3 ))
   sep='{::}'
