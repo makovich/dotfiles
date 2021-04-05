@@ -1,7 +1,7 @@
 [Midnight-Commander]
 verbose=true
 shell_patterns=true
-auto_save_setup=true
+auto_save_setup=false
 preallocate_space=false
 auto_menu=false
 use_internal_view=true
@@ -14,7 +14,7 @@ confirm_history_cleanup=true
 confirm_exit=false
 confirm_directory_hotlist_delete=false
 confirm_view_dir=false
-safe_delete=false
+safe_delete=true
 use_8th_bit_as_meta=false
 mouse_move_pages_viewer=true
 mouse_close_dialog=false
@@ -23,12 +23,12 @@ drop_menus=true
 wrap_mode=true
 old_esc_mode=true
 cd_symlinks=true
-show_all_if_ambiguous=false
+show_all_if_ambiguous=true
 use_file_to_guess_type=true
 alternate_plus_minus=false
 only_leading_plus_minus=true
 show_output_starts_shell=false
-xtree_mode=false
+xtree_mode=true
 file_op_compute_totals=true
 classic_progressbar=true
 use_netrc=true
@@ -84,18 +84,20 @@ mcview_eof=
 skin=modarin256-defbg
 filepos_max_saved_entries=1024
 
+safe_overwrite=true
+
 [Layout]
-message_visible=0
-keybar_visible=0
-xterm_title=1
+message_visible=false
+keybar_visible=false
+xterm_title=true
 output_lines=0
-command_prompt=0
-menubar_visible=0
-free_space=1
-horizontal_split=0
-vertical_equal=1
+command_prompt=false
+menubar_visible=false
+free_space=true
+horizontal_split=false
+vertical_equal=true
 left_panel_size=89
-horizontal_equal=1
+horizontal_equal=true
 top_panel_size=23
 
 [Misc]
@@ -127,11 +129,11 @@ kilobyte_si=false
 mix_all_files=false
 show_backups=true
 show_dot_files=true
-fast_reload=false
-fast_reload_msg_shown=false
+fast_reload=true
+fast_reload_msg_shown=true
 mark_moves_down=true
 reverse_files_only=true
-auto_save_setup_panels=true
+auto_save_setup_panels=false
 navigate_with_arrows=false
 panel_scroll_pages=false
 panel_scroll_center=false
