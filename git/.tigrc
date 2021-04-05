@@ -36,7 +36,7 @@ set refs-view-date = relative
 set stash-view-date = relative
 set tree-view-date = relative
 
-set diff-highlight = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight
+# set diff-highlight = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight
 
 color cursor       white  blue   bold
 color status       red    black  dim

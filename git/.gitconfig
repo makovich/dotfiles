@@ -3,12 +3,13 @@
     email = paul@makovi.ch
 
 [alias]
-    a  = add
-    s = status
-    b = branch --all -v
-    c = commit --all --message
+    aa = add --all
+    st = status
+    br = branch
+    bra = branch --all -v
+    cc = commit --all --message
     co = checkout
-    ca = commit --amend
+    cam = commit --amend
     lg = log --all --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
     ls-subtrees = !"git log | grep git-subtree-dir | awk '{ print $2 }'"
 
@@ -22,10 +23,28 @@
 # - git log --pretty=format: --name-only | sort | uniq -c | sort -r | head -30
 
 [core]
-    pager = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight | less
+#   pager = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight | less
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+#   features = side-by-side line-numbers decorations
+    features = line-numbers decorations
+    whitespace-error-style = 22 reverse
+    theme = Monokai Extended
+
+[delta "decorations"]
+#   commit-decoration-style = bold yellow box ul
+    hunk-header-style = omit
+    file-style = bold yellow
+    file-decoration-style = none
+#   color-only = true
 
 [diff]
-    tool = icdiff
+#   tool = icdiff
+    tool = delta
 
 [difftool]
     prompt = false
