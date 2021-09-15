@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>Label</key>
+        <string>dnscrypt-proxy-blocklist</string>
+
+        <key>WorkingDirectory</key>
+        <string>/opt/dnscrypt-proxy</string>
+
+        <key>Program</key>
+        <string>/opt/dnscrypt-proxy/update-blocklist</string>
+
+        <key>StandardOutPath</key>
+        <string>/var/log/dnscrypt-proxy-blocklist.log</string>
+
+        <key>StandardErrorPath</key>
+        <string>/var/log/dnscrypt-proxy-blocklist.log</string>
+
+        <key>StartCalendarInterval</key>
+        <dict>
+            <key>Hour</key>
+            <integer>15</integer>
+            <key>Minute</key>
+            <integer>10</integer>
+        </dict>
+    </dict>
+</plist>
+

@@ -1,0 +1,56 @@
+[user]
+    name = paul
+    email = paul@makovi.ch
+
+[alias]
+    aa = add --all
+    st = status
+    br = branch
+    bra = branch --all -v
+    cc = commit --all --message
+    co = checkout
+    cam = commit --amend
+    lg = log --all --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+    ls-subtrees = !"git log | grep git-subtree-dir | awk '{ print $2 }'"
+
+# Exploring history:
+# - git branch --all --verbose
+# - git rev-list --count origin/master
+# - git rev-list --count --no-merges origin/master
+# - git for-each-ref --sort=-committerdate refs/remotes/ --shell --format=’%(refname:short)’ | xargs -I REF sh -c 'printf "%-30s %10s %10s\n" "REF" `git rev-list --count REF` `git rev-list --count --no-merges REF`'
+# - git for-each-ref --sort=-committerdate refs/remotes --format='%(align:35)%(refname:short)%(end) %(committerdate:short) %(align:20)%(authorname)%(end) %(objectname:short)'
+# - git shortlog -sn [--no-merges] | cat
+# - git log --pretty=format: --name-only | sort | uniq -c | sort -r | head -30
+
+[core]
+#   pager = /usr/local/opt/git/share/git-core/contrib/diff-highlight/diff-highlight | less
+    pager = delta
+
+[interactive]
+    diffFilter = delta --color-only
+
+[delta]
+#   features = side-by-side line-numbers decorations
+    features = line-numbers decorations
+    whitespace-error-style = 22 reverse
+    theme = Monokai Extended
+
+[delta "decorations"]
+#   commit-decoration-style = bold yellow box ul
+    hunk-header-style = omit
+    file-style = bold yellow
+    file-decoration-style = none
+#   color-only = true
+
+[diff]
+#   tool = icdiff
+    tool = delta
+
+[difftool]
+    prompt = false
+
+[difftool "icdiff"]
+    cmd = /usr/local/bin/icdiff --line-numbers $LOCAL $REMOTE
+
+[icdiff]
+    options = --highlight --line-numbers

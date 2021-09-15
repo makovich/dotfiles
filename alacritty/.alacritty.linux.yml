@@ -1,0 +1,27 @@
+window:
+  startup_mode: Fullscreen
+
+font:
+  size: 9.5
+  offset:
+    x: 0
+    y: -2
+
+  glyph_offset:
+    x: 0
+    y: -1
+
+  normal:
+    style: Medium
+
+  bold:
+    style: Black
+
+  italic:
+    style: Medium Italic
+
+  bold_italic:
+    style: Black Italic
+
+key_bindings:
+  - { key: Return, mods: Command, action: ToggleFullscreen }

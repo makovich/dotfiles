@@ -1,0 +1,2 @@
+#!/bin/sh
+sk -c "pup --color always --file {}" --preview "pup --color always --file '{cq}' '{q}'" --cmd-query "$1"

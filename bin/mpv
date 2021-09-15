@@ -1,0 +1,3 @@
+#!/bin/sh
+
+[ `uname -s` == "Darwin" ] && exec /Applications/mpv.app/Contents/MacOS/mpv || exec /usr/local/bin/mpv

@@ -1,0 +1,23 @@
+window:
+  startup_mode: SimpleFullscreen
+
+font:
+  size: 13.0
+  offset:
+    x: 1
+    y: 0
+
+  normal:
+    style: Regular
+
+  bold:
+    style: Bold
+
+  italic:
+    style: Italic
+
+  bold_italic:
+    style: Bold Italic
+
+key_bindings:
+  - { key: Return, mods: Command, action: ToggleSimpleFullscreen }

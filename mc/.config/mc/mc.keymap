@@ -1,0 +1,81 @@
+[panel]
+Up = up; k
+Down = down; j
+Left =
+Right =
+Top = alt-lt; home; left; g
+Bottom = alt-gt; end; right; G
+PageUp = pgup; ctrl-u
+PageDown = pgdn; ctrl-d
+CdParent = ctrl-pgup; backspace; h
+Enter = enter; ctrl-j; l
+MarkDown = i
+Search = slash; ctrl-s
+Sort = S
+PanelOtherCd = alt-o; J
+CycleListingFormat = alt-t; L
+
+# real map in [main], this one shadows quick search
+View = space
+Edit = V
+QuitQuiet = Q
+PanelQuickView = K
+Delete = D
+Copy = C
+Move = M
+ChangePanel = semicolon
+MenuLastSelected = colon
+DirSize = I
+Find = question
+MakeDir = N
+Help = H
+
+[main]
+Help = F1; H
+Find = question
+Quit = alt-x; F10
+QuitQuiet = Q
+PanelQuickView = K
+Delete = D; F8
+Copy = C; F5
+Move = M; F6
+ChangePanel = semicolon; tab
+View = space; F3
+Edit = F4; V
+MenuLastSelected = colon; F9
+DirSize = I
+MakeDir = F7; N
+
+[dialog]
+Ok = enter; ctrl-j
+Cancel = f10; esc; ctrl-g; ctrl-c
+Up = left; up; k
+Down = right; down; j
+
+[menu]
+Left = left; ctrl-b; h
+Right = right; ctrl-f; l
+Up = up; ctrl-p; k
+Down = down; ctrl-n; j
+Enter = enter; ctrl-j
+Quit = F10; esc; ctrl-g; ctrl-c
+
+[help]
+Help = f1
+Index = f2; c
+Back = f3; left; h
+Quit = f10; esc; q
+Up = up; ctrl-p; k
+Down = down; ctrl-n; j
+PageDown = f; space; pgdn; ctrl-v
+PageUp = b; pgup; alt-v; backspace
+HalfPageDown = ctrl-d
+HalfPageUp = ctrl-u
+Top = home; ctrl-home; ctrl-pgup; a1; alt-lt; g
+Bottom = end; ctrl-end; ctrl-pgdn; c1; alt-gt; shift-g
+Enter = right; enter; l; ctrl-j
+LinkNext = tab
+LinkPrev = alt-tab
+NodeNext = n
+NodePrev = p
+

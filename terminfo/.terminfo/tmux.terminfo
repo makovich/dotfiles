@@ -1,0 +1,19 @@
+# tmux is mostly compatible with screen, but has support for italics, and some
+# of the xterm cursor bits.
+#
+# However, unlike screen, tmux has no provision for using derived terminal
+# descriptions.  When screen starts, it looks for a suitable "inner" terminal
+# such as "screen.$TERM" to correspond to the outer terminal's quirks.  The
+# various entries such as screen.xterm-new provide a way to more closely
+# match the terminal.
+tmux|tmux terminal multiplexer,
+	invis=\E[8m, rmso=\E[27m,
+	sgr=\E[0%?%p6%t;1%;%?%p2%t;4%;%?%p1%p3%|%t;7%;%?%p4%t;5%;%?
+	    %p5%t;2%;%?%p7%t;8%;m%?%p9%t\016%e\017%;,
+	smso=\E[7m, E3=\E[3J, use=ecma+italics,
+	use=ecma+strikeout, use=xterm+edit, use=xterm+pcfkeys,
+	use=xterm+sl, use=xterm+tmux, use=screen,
+
+tmux-256color|tmux with 256 colors,
+	use=xterm+256setaf, use=tmux,
+

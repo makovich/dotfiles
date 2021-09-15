@@ -1,0 +1,2 @@
+#!/bin/sh
+sk -c "gron --colorize {}" --preview "gron {cq} | rg '{q}' | gron --colorize --ungron" --cmd-query "$1"
