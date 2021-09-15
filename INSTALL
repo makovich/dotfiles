@@ -1,0 +1,21 @@
+# Steps
+
+cd
+
+ln -s dotfiles/alacritty/.alacritty.yml
+ln -s dotfiles/alacritty/.alacritty.{linux/macos}.yml
+
+ln -s dotfiles/tmux/.tmux.conf
+
+ln -s dotfiles/shell/.inputrc
+ln -s dotfiles/shell/.profile
+ln -s dotfiles/shell/.profile .bashrc
+ln -s dotfiles/shell/.profile .zshrc
+
+After the first start with `zshrc`, run `zle-get-fsh`.
+
+ln -s dotfiles/vim/.vimrc
+
+Run `v +GetPlugs` to install plugins.
+
+`bin/` contains the list of tools which installation instructions depend on distro.
