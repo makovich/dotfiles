@@ -18,4 +18,6 @@ ln -s dotfiles/vim/.vimrc
 
 Run `v +GetPlugs` to install plugins.
 
+ln -s dotfiles/bin
+
 `bin/` contains the list of tools which installation instructions depend on distro.
