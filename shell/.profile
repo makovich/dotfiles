@@ -18,7 +18,7 @@ export LANG=en_US.UTF-8
 export LANGUAGE=en_US.UTF-8
 
 # export PATH="/usr/local/sbin:/usr/local/bin:$PATH"
-export PATH="$HOME/bin:/usr/local/bin:$PATH"
+export PATH="$HOME/bin:$PATH"
 
 # MacOS has own config dir prefrence
 export XDG_CONFIG_HOME=$HOME/.config
@@ -63,105 +63,171 @@ export ALPINE_ISO_DIR=$HOME/code/alpine-img
 
 # nnn
 export NNN_OPTS="aeoQH"
-export NNN_PLUG=";:preview-tui"
+export NNN_PLUG="?:-preview-tui"
 export NNN_BMS="d:~/dotfiles;s:~/src"
 export NNN_FCOLORS="c1e26c2e006033f5c6d6abc4"
 export NNN_ARCHIVE="\\.(7z|bz|bz2|gz|rar|rpm|tar|tgz|zip)$"
 export NNN_OPENER=$HOME/bin/ql
 # export NNN_OPENER="$HOME/.config/nnn/plugins/nuke"
 
-# Pickers
-MENU_COMMAND="fd --type file --follow --hidden --exclude .git --color=always || find ."
-export SKIM_DEFAULT_COMMAND="$MENU_COMMAND"
-export FZF_DEFAULT_COMMAND="$MENU_COMMAND"
-
+# skim
+export SKIM_DEFAULT_COMMAND="fd --type file --follow --hidden --exclude .git --color=always || find ."
 export SKIM_DEFAULT_OPTIONS="
 --ansi \
 --reverse \
 --color=16 \
---preview-window='right:65%:hidden' \
---preview='bat --color=always --style=numbers {}' \
+--delimiter=: \
+--preview-window='right:65%:hidden:+{2}-/2' \
+--preview='
+    case \`file -bL --mime-type {1}\` in
+      text/html)         w3m {1} ;;
+      text/troff)        man {1} ;;
+      text/*)            bat --style=numbers --color=always --highlight-line {2}:+0 {1} ;;
+      image/*)           viu {1} ;;
+      application/pdf)   pdftotext -layout -nopgbrk {1} - ;;
+      *)                 hexyl --bytes=4KiB --color=always --border=none {1} ;;
+    esac
+'
 --bind='\
-?:toggle-preview,\
-ctrl-j:accept,\
-ctrl-[:cancel,\
 ctrl-d:half-page-down,\
 ctrl-u:half-page-up,\
+?:toggle-preview,\
+alt-/:execute-silent(ql {}),\
+alt-space:execute-silent(ql {})+down,\
 alt-j:preview-down,\
 alt-k:preview-up,\
 alt-h:preview-left,\
 alt-l:preview-right,\
 alt-d:preview-page-down,\
-alt-u:preview-page-up'\
-"
-
-export FZF_DEFAULT_OPTS="
---ansi \
---reverse \
---color=16 \
---preview-window='right:65%:hidden' \
---preview='bat --color=always --style=numbers {}' \
---bind='\
-ctrl-j:accept,\
-ctrl-[:cancel,\
-ctrl-d:half-page-down,\
-ctrl-u:half-page-up,\
-?:toggle-preview,\
-alt-j:preview-down,\
-alt-k:preview-up,\
-alt-d:preview-page-down,\
-alt-u:preview-page-up'\
+alt-u:preview-page-up,'\
 "
 
 alias v="$EDITOR"
 alias c="`command -v bat >/dev/null 2>&1 && echo bat || echo cat`"
 alias n="[ -n "$NNNLVL" ] && [ "${NNNLVL:-0}" -ge 1 ] && exit || nnn"
-alias l="ls -alFh `ls --color >/dev/null 2>&1 && echo '--color' || echo '-G'`"
+alias l="ls -alFh `ls --color >/dev/null 2>&1 && echo --color || echo -G`"
 
+alias waa="wa --mirror"
 alias srv="python3 -m http.server 8080"
-alias tmp='cd `mktemp -d /tmp/XXXXXXXX`'
-alias tac="`tac -h >/dev/null 2>&1 && echo tac || echo 'tail -r'`"
+alias tmp='cd `mktemp -d /tmp/tXXXXXXX`'
+alias tac="`tac -h >/dev/null 2>&1 && echo tac || echo tail -r`"
+
+alias skim="command sk"
 
 mkcd() {
-  mkdir -p $1
-  cd $1
+  mkdir -p "$1"
+  cd "$1"
+}
+
+sk() {
+  # stdin is not a tty means data has been piped into skim
+  if [ ! -t 0 ]; then
+    command sk "$@"
+    return $?
+  fi
+
+  # 1. esc | ctrl-c
+  #    $?=0
+  #
+  # 2. Open selected file when query is empty:
+  #    qry=
+  #    key=ctrl-j | enter
+  #    sel=first_item
+  #
+  # 3. Open fuzzy mathced file
+  #    qry=asdf
+  #    key=ctrl-j | enter
+  #    sel=am-sa-do-fi.md
+  #
+  # 4. Use query as a new filename
+  #    qry='newfile.md
+  #    key=ctrl-j | enter
+  #    sel=
+  #
+  # 5. Ripgrep through files' content
+  #    qry=
+  #    key=tab
+  #    sel=
+  #
+
+  local qry key sel mod res
+
+  __fd() {
+    command sk \
+      --prompt="Fls> " \
+      --header=" " \
+      --no-multi \
+      --cmd='fd --color=always --type file --follow' \
+      --expect=enter,alt-enter,ctrl-m,alt-m,ctrl-c,esc,tab \
+      --print-query \
+      --query="$1"
+  }
+
+  __rg() {
+    command sk \
+      --prompt="Rgp> " \
+      --header=" " \
+      --no-multi \
+      --cmd='rg --color=always --ignore-case --line-number "{}"' \
+      --delimiter=: \
+      --nth="3.." \
+      --expect=enter,alt-enter,ctrl-m,alt-m,ctrl-c,esc,tab \
+      --print-query \
+      --query="$1"
+  }
+
+  mod="__fd"
+  qry="$@"
+
+  while true; do
+    res=$(eval '$mod' '$qry')
+    qry=$(echo "$res" | sed -n 1p)
+    key=$(echo "$res" | sed -n 2p)
+    sel=$(echo "$res" | sed -n 3p)
+
+    [ "$key" != "tab" ] && break
+
+    if [ "$mod" = "__rg" ]; then
+      mod="__fd"
+    else
+      mod="__rg"
+    fi
+  done
+
+  case "$key" in
+    ctrl-m | enter)
+      if [ -z "$sel" ]; then
+        $EDITOR "${qry#\'}"
+      elif [ "$mod" = "__fd" ]; then
+        $EDITOR "$sel"
+      else
+        $EDITOR $(echo "$sel" | cut -f1,2 -d':' | sed 's/:/ \+/g')
+      fi
+      ;;
+    alt-m | alt-enter)
+      echo "${sel:-$qry}"
+      ;;
+    ctrl-c | esc | *)
+      return 0
+      ;;
+  esac
 }
 
 m() {
-  pushd $HOME/mem
-  trap popd EXIT
-
-  # 1. esc
-  #    $?=130
-  #
-  # 2. ctrl-j
-  #    qry=
-  #    sel=first_item
-  #
-  # 3. ctrl-j
-  #    qry=asdf
-  #    sel=am-sa-do-fi.md
-  #
-  # 4. ctrl-j
-  #    qry='newfile.md
-  #    sel=
-  res=$(sk --bind='ctrl-r:execute(ENV=~/.profile sh -ci "cd $HOME/mem; rg")' --print-query --query ${1:-""} --select-1)
-  [ $? -eq 130 ] && return 0
-
-  qry=$(echo "$res" | sed -n 1p | tr -d "'")
-  sel=$(echo "$res" | sed -n 2p)
-
-  if [ -z "$sel" ]; then
-    $EDITOR "$qry"
-  else
-    $EDITOR "$sel"
-  fi
+  trap "cd `pwd`" EXIT
+  cd $HOME/mem
+  sk "$@"
 }
 
 wa() {
-  [ "$#" -lt 1 ] && echo "Usage:\n    $0 URL" && return 1
-  pushd $HOME/warc
-  trap popd EXIT
+  trap "cd `pwd`" EXIT
+  cd $HOME/warc
+
+  if [ -z "$1" ]; then
+    EDITOR="open" sk "$@"
+    return $?
+  fi
+
   wget \
     --page-requisites \
     --convert-links \
@@ -174,34 +240,15 @@ wa() {
     "$@"
 }
 
-waa() {
-  [ "$#" -lt 1 ] && echo "Usage:\n    $0 URL" && return 1
-  wa --mirror "$1"
-}
-
-fd() {
-  if [ "$#" -gt 0 ]; then
-    command fd "$@"
+ramdrive() {
+  if [ `uname -s` = "Darwin" ]; then
+    # <blocksize is 2048> * <size in Mb == 100>
+    diskutil erasevolume HFS+ 'RAMDrive' `hdiutil attach -nobrowse -nomount ram://204800`
   else
-    sk | xargs $EDITOR
-  fi
-}
-
-rg() {
-  if [ "$#" -gt 0 ]; then
-    command rg "$@"
-  else
-    sk \
-      --ansi \
-      --delimiter=':' \
-      --no-multi \
-      --interactive \
-      --preview-window=right:65%:+{2}-/2 \
-      --preview='bat --style=numbers --color=always --highlight-line {2} {1}' \
-      --cmd 'rg "{}" --hidden --color=always --ignore-case --line-number' \
-      | cut -f1,2 -d':' \
-      | sed 's/:/ \+/g' \
-      | xargs -I{} sh -c '</dev/tty $EDITOR {}'
+    local rd=/mnt/ramdrive
+    mkdir -p $rd
+    mount -t tmpfs -o size=100m ramdrive $rd
+    cd $rd
   fi
 }
 
@@ -218,188 +265,198 @@ stty discard undef
 
 # Bashisms
 [ "$BASH_VERSION" ] && {
-	PS1="${SSH_CONNECTION+\H }"
-	PS1+='\e[$((\j>0?7:0))m'
-	PS1+='\e[32m$(code=${?##0};echo ${code:+"\e[31m"})\$\e[00m '
+  PS1="${SSH_CONNECTION+\H }"
+  PS1+='\e[$((\j>0?7:0))m'
+  PS1+='\e[32m$(code=${?##0};echo ${code:+"\e[31m"})\$\e[00m '
 
-	HISTFILE=~/.bash_history
-	HISTCONTROL=ignorespace
-	HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S  "
-	HISTFILESIZE=20000
+  HISTFILE=~/.bash_history
+  HISTCONTROL=ignorespace
+  HISTTIMEFORMAT="%Y-%m-%d %H:%M:%S  "
+  HISTFILESIZE=20000
 
-	shopt -s histappend
+  shopt -s histappend
 
-	# nnn
-	bind -x '"\C-o": n'
+  # nnn
+  bind -x '"\C-o": n'
 }
 
 # Zetshisms
 [ "$ZSH_VERSION" ] && {
-	export HISTFILE=~/.zsh_history
-	export SAVEHIST=20000
-	export KEYTIMEOUT=35
+  export HISTFILE=~/.zsh_history
+  export SAVEHIST=20000
+  export KEYTIMEOUT=35
 
-	# Uncomment last line or zprof in new session to get counters
-	# zmodload zsh/zprof
+  # Uncomment last line or zprof in new session to get counters
+  # zmodload zsh/zprof
 
-	# Syntax
-	zle-get-fsh () {
-		mkdir -p ~/.zsh
-		git clone https://github.com/zdharma/fast-syntax-highlighting ~/.zsh/fsh
-	}
-	source ~/.zsh/fsh/fast-syntax-highlighting.plugin.zsh
+  # Syntax
+  zle-get-fsh () {
+    mkdir -p ~/.zsh
+    git clone https://github.com/zdharma/fast-syntax-highlighting ~/.zsh/fsh
+  }
+  source ~/.zsh/fsh/fast-syntax-highlighting.plugin.zsh
 
-	# Prompt
-	# setopt prompt_subst
-	psvar[1]=${SSH_CONNECTION:-}
-	PROMPT=$'%(1V.%M .)%(1j.%(?.%B%K{2}%F{16}.%B%K{1}%F{16}).%(?.%F{2}.%F{1}))%(!.#.$)%k%f%b\U00A0'
-	RPROMPT="%F{242}%~%f"
+  # Prompt
+  # setopt prompt_subst
+  psvar[1]=${SSH_CONNECTION:-}
+  PROMPT=$'%(1V.%M .)%(1j.%(?.%B%K{2}%F{16}.%B%K{1}%F{16}).%(?.%F{2}.%F{1}))%(!.#.$)%k%f%b\U00A0'
+  RPROMPT="%F{242}%~%f"
 
-	zle-keymap-select() {
-		# 0 -> blinking block.
-		# 1 -> blinking block (default).
-		# 2 -> steady block.
-		# 3 -> blinking underline.
-		# 4 -> steady underline.
-		# 5 -> blinking bar (xterm).
-		# 6 -> steady bar (xterm).
-		printf '\e[%s q' ${${KEYMAP/vicmd/2}/(main|viins)/6}
-	}
-	zle -N zle-keymap-select
+  zle-keymap-select() {
+    # 0 -> blinking block.
+    # 1 -> blinking block (default).
+    # 2 -> steady block.
+    # 3 -> blinking underline.
+    # 4 -> steady underline.
+    # 5 -> blinking bar (xterm).
+    # 6 -> steady bar (xterm).
+    printf '\e[%s q' ${${KEYMAP/vicmd/2}/(main|viins)/6}
+  }
+  zle -N zle-keymap-select
 
-	zle-line-init() {
-		zle reset-prompt
-		zle zle-keymap-select
-	}
-	zle -N zle-line-init
+  zle-line-init() {
+    zle reset-prompt
+    zle zle-keymap-select
+  }
+  zle -N zle-line-init
 
-	function vi-yank-xclip {
-		zle vi-yank
-		echo -n "$CUTBUFFER" | (xsel -ipb || pbcopy) 2>/dev/null
-	}
-	zle -N vi-yank-xclip
+  function vi-yank-xclip {
+    zle vi-yank
+    echo -n "$CUTBUFFER" | (xsel -ipb || pbcopy) 2>/dev/null
+  }
+  zle -N vi-yank-xclip
 
-	# Vi
-	bindkey -v
+  # Vi
+  bindkey -v
 
-	# Yank to the system clipboard
-	bindkey -M vicmd "y" vi-yank-xclip
+  # Yank to the system clipboard
+  bindkey -M vicmd "y" vi-yank-xclip
 
-	# Vi normal mode
-	bindkey -s "jj" "^["
+  # Vi normal mode
+  bindkey -s "jj" "^["
 
-	# Edit in $EDITOR
-	autoload -Uz edit-command-line
-	zle -N edit-command-line
-	bindkey -M vicmd "^V" edit-command-line
+  # vim-surround
+  autoload -Uz surround
+  zle -N delete-surround surround
+  zle -N add-surround surround
+  zle -N change-surround surround
+  bindkey -a cs change-surround
+  bindkey -a ds delete-surround
+  bindkey -a ys add-surround
+  bindkey -M visual S add-surround
 
-	# Emacs
-	bindkey "^A" beginning-of-line
-	bindkey "^W" backward-kill-word
-	bindkey "^E" end-of-line
-	bindkey "^Y" yank
-	bindkey "^D" delete-char
-	bindkey "^H" backward-delete-char
-	bindkey "^C" kill-buffer
+  # Edit in $EDITOR
+  autoload -Uz edit-command-line
+  zle -N edit-command-line
+  bindkey -M vicmd "^V" edit-command-line
 
-	# This mimics to vicmd in ins mode
-	bindkey "^[h" backward-char
-	bindkey "^[l" forward-char
+  # Emacs
+  bindkey "^A" beginning-of-line
+  bindkey "^W" backward-kill-word
+  bindkey "^E" end-of-line
+  bindkey "^Y" yank
+  bindkey "^D" delete-char
+  bindkey "^H" backward-delete-char
+  bindkey "^C" kill-buffer
 
-	# Smart history lookup
-	autoload -U up-line-or-beginning-search
-	autoload -U down-line-or-beginning-search
-	zle -N up-line-or-beginning-search
-	zle -N down-line-or-beginning-search
-	bindkey "^P" up-line-or-beginning-search
-	bindkey "^N" down-line-or-beginning-search
+  # This mimics to vicmd in ins mode
+  bindkey "^[h" backward-char
+  bindkey "^[l" forward-char
 
-	# Repeat last command
-	bindkey -M vicmd -s "." "^P^M"
-	bindkey          -s "^K" "^[[A^M"
+  # Smart history lookup
+  autoload -U up-line-or-beginning-search
+  autoload -U down-line-or-beginning-search
+  zle -N up-line-or-beginning-search
+  zle -N down-line-or-beginning-search
+  bindkey "^P" up-line-or-beginning-search
+  bindkey "^N" down-line-or-beginning-search
 
-	# Exit
-	bindkey -M vicmd -s "q" "i^D"
+  # Repeat last command
+  bindkey -M vicmd -s "." "^P^M"
+  bindkey          -s "^K" "^[[A^M"
 
-	# Midnight Commander
-	bindkey -s "^O" "n^M"
+  # Exit
+  bindkey -M vicmd -s "q" "i^D"
 
-	# man page
-	bindkey -M vicmd -s "K" "Iman ^M"
+  # Midnight Commander
+  bindkey -s "^O" "n^M"
 
-	# Do show hidden files
-	setopt globdots
+  # man page
+  bindkey -M vicmd -s "K" "Iman ^M"
 
-	# Display items after <tab> and reprint prompt after them
-	unsetopt always_last_prompt
+  # Do show hidden files
+  setopt globdots
 
-	# Allow to add few more symbols to type before inserting the first match
-	unsetopt menu_complete
+  # Display items after <tab> and reprint prompt after them
+  unsetopt always_last_prompt
 
-	# Show completions menu
-	setopt auto_menu
+  # Allow to add few more symbols to type before inserting the first match
+  unsetopt menu_complete
 
-	# No beep on tab
-	unsetopt list_beep
+  # Show completions menu
+  setopt auto_menu
 
-	# More columns
-	setopt list_packed
+  # No beep on tab
+  unsetopt list_beep
 
-	# Disable start/stop characters in shell editor
-	unsetopt flowcontrol
+  # More columns
+  setopt list_packed
 
-	# Complete from anywhere in a word
-	# mk|dr --> mkdir|
-	setopt complete_in_word
+  # Disable start/stop characters in shell editor
+  unsetopt flowcontrol
 
-	# Move cursor to the end of a completed word
-	setopt always_to_end
+  # Complete from anywhere in a word
+  # mk|dr --> mkdir|
+  setopt complete_in_word
 
-	# HISTORY_IGNORE="(ls|cd|pwd|exit|cd ..)"
+  # Move cursor to the end of a completed word
+  setopt always_to_end
 
-	# Write session history after exit
-	setopt append_history
+  # HISTORY_IGNORE="(ls|cd|pwd|exit|cd ..)"
 
-	# Remove commands starting from space from history
-	setopt hist_ignore_space
+  # Write session history after exit
+  setopt append_history
 
-	# Allow comments in the commmand line
-	setopt interactive_comments
+  # Remove commands starting from space from history
+  setopt hist_ignore_space
 
-	# cd acts as pushd
-	setopt autopushd
+  # Allow comments in the commmand line
+  setopt interactive_comments
 
-	# Time and duration for history log
-	# $ fc -l -i -D -2
-	setopt extendedhistory
+  # cd acts as pushd
+  setopt autopushd
 
-	# Completions
-	# autoload -Uz compinit
-	# compinit -i
+  # Time and duration for history log
+  # $ fc -l -i -D -2
+  setopt extendedhistory
 
-	# Display menu
-	# zstyle ':completion:*:*:*:*:*' menu
+  # Completions
+  # autoload -Uz compinit
+  # compinit -i
 
-	# Default to file completion
-	# zstyle ':completion:*' completer _files _complete # _expand _complete _files # _correct _approximate
+  # Display menu
+  # zstyle ':completion:*:*:*:*:*' menu
 
-	# Default colors
-	# via https://stackoverflow.com/a/16149200
-	# zstyle -e ':completion:*:default' list-colors 'reply=("${PREFIX:+=(#bi)($PREFIX:t)(?)*==34=34}:${(s.:.)LS_COLORS}")'
+  # Default to file completion
+  # zstyle ':completion:*' completer _files _complete # _expand _complete _files # _correct _approximate
 
-	# Via Jonathan Hayase https://superuser.com/a/815317
-	# - smart case completion (abc => Abc)
-	# - word flex completion (abc => A-big-Car)
-	# - full flex completion (abc => ABraCadabra)
-	# zstyle ':completion:*' matcher-list \
-	#  'm:{a-z\-}={A-Z\_}' \
-	#  'r:[^[:alpha:]]||[[:alpha:]]=** r:|=* m:{a-z\-}={A-Z\_}' \
-	#  'r:|?=** m:{a-z\-}={A-Z\_}'
+  # Default colors
+  # via https://stackoverflow.com/a/16149200
+  # zstyle -e ':completion:*:default' list-colors 'reply=("${PREFIX:+=(#bi)($PREFIX:t)(?)*==34=34}:${(s.:.)LS_COLORS}")'
 
-	# Magic man
-	# zstyle ':completion:*:manuals' separate-sections true
-	# zstyle ':completion:*:manuals.*' insert-sections true
-	# zstyle ':completion:*:man:*' menu select
+  # Via Jonathan Hayase https://superuser.com/a/815317
+  # - smart case completion (abc => Abc)
+  # - word flex completion (abc => A-big-Car)
+  # - full flex completion (abc => ABraCadabra)
+  # zstyle ':completion:*' matcher-list \
+  #  'm:{a-z\-}={A-Z\_}' \
+  #  'r:[^[:alpha:]]||[[:alpha:]]=** r:|=* m:{a-z\-}={A-Z\_}' \
+  #  'r:|?=** m:{a-z\-}={A-Z\_}'
 
-	# zprof
+  # Magic man
+  # zstyle ':completion:*:manuals' separate-sections true
+  # zstyle ':completion:*:manuals.*' insert-sections true
+  # zstyle ':completion:*:man:*' menu select
+
+  # zprof
 }

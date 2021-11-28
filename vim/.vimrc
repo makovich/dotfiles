@@ -22,42 +22,6 @@ if has('macunix')
   let g:XkbSwitchEnabled = 1
 endif
 
-" Dependencies:
-" - https://github.com/universal-ctags/ctags
-" - https://github.com/dan-t/rusty-tags
-" - https://github.com/lotabout/skim
-" - https://github.com/BurntSushi/ripgrep
-" - https://github.com/sharkdp/fd
-" - https://github.com/sharkdp/bat
-
-" :GetPlugs
-let s:repos = "
-  \ https://github.com/prabirshrestha/asyncomplete-file.vim
-  \ https://github.com/prabirshrestha/asyncomplete-lsp.vim
-  \ https://github.com/yami-beta/asyncomplete-omni.vim
-  \ https://github.com/prabirshrestha/asyncomplete.vim
-  \ https://github.com/jiangmiao/auto-pairs
-  \ https://github.com/bakpakin/fennel.vim
-  \ https://github.com/rafamadriz/friendly-snippets
-  \ https://github.com/haya14busa/incsearch.vim
-  \ https://github.com/lotabout/skim
-  \ https://github.com/tweekmonster/startuptime.vim
-  \ https://github.com/wellle/targets.vim
-  \ https://github.com/tpope/vim-commentary
-  \ https://github.com/prabirshrestha/vim-lsp
-  \ https://github.com/mattn/vim-lsp-settings
-  \ https://github.com/tpope/vim-repeat
-  \ https://github.com/justinmk/vim-sneak
-  \ https://github.com/tpope/vim-surround
-  \ https://github.com/tpope/vim-unimpaired
-  \ https://github.com/tpope/vim-vinegar
-  \ https://github.com/hrsh7th/vim-vsnip
-  \ https://github.com/hrsh7th/vim-vsnip-integ
-  \ https://github.com/lyokha/vim-xkbswitch
-  \ "
-
-packloadall
-
 syntax on
 colorscheme default
 
@@ -153,6 +117,42 @@ hi def VimwikiHeader4             ctermfg=243                             cterm=
 hi def VimwikiHeader5             ctermfg=240                             cterm=bold
 hi def VimwikiHeader6             ctermfg=237                             cterm=bold
 
+" Dependencies:
+" - https://github.com/universal-ctags/ctags
+" - https://github.com/dan-t/rusty-tags
+" - https://github.com/lotabout/skim
+" - https://github.com/BurntSushi/ripgrep
+" - https://github.com/sharkdp/fd
+" - https://github.com/sharkdp/bat
+
+" :GetPlugs
+let s:repos = "
+  \ https://github.com/prabirshrestha/asyncomplete-file.vim
+  \ https://github.com/prabirshrestha/asyncomplete-lsp.vim
+  \ https://github.com/yami-beta/asyncomplete-omni.vim
+  \ https://github.com/prabirshrestha/asyncomplete.vim
+  \ https://github.com/jiangmiao/auto-pairs
+  \ https://github.com/bakpakin/fennel.vim
+  \ https://github.com/rafamadriz/friendly-snippets
+  \ https://github.com/haya14busa/incsearch.vim
+  \ https://github.com/lotabout/skim
+  \ https://github.com/tweekmonster/startuptime.vim
+  \ https://github.com/wellle/targets.vim
+  \ https://github.com/tpope/vim-commentary
+  \ https://github.com/prabirshrestha/vim-lsp
+  \ https://github.com/mattn/vim-lsp-settings
+  \ https://github.com/tpope/vim-repeat
+  \ https://github.com/justinmk/vim-sneak
+  \ https://github.com/tpope/vim-surround
+  \ https://github.com/tpope/vim-unimpaired
+  \ https://github.com/tpope/vim-vinegar
+  \ https://github.com/hrsh7th/vim-vsnip
+  \ https://github.com/hrsh7th/vim-vsnip-integ
+  \ https://github.com/lyokha/vim-xkbswitch
+  \ "
+
+packloadall
+
 filetype on
 filetype plugin on
 filetype indent on
@@ -224,11 +224,15 @@ let mapleader = "\<Space>"
 inoremap jj <Esc>
 inoremap оо <Esc>
 
-" Wrapped line is not the single one for motions
+" Wrapped line is not the single one
 nmap j gj
 nmap k gk
 vmap j gj
 vmap k gk
+
+" Window sliding
+noremap <C-j> <C-y>
+noremap <C-k> <C-e>
 
 " Hardmode
 noremap <Up> <Nop>
@@ -299,7 +303,7 @@ nnoremap ' `
 nmap <Leader>; <C-^>
 
 " Select buffer by single number
-nnoremap <silent> <Leader>' :buffers<CR>:silent exec "buffer " . nr2char(getchar())<CR>
+" nnoremap <silent> <Leader>: :buffers<CR>:silent exec "buffer " . nr2char(getchar())<CR>
 
 " Shift-q closes the buffer or window if it's the last one
 nmap <expr> <Leader>q len(getbufinfo({'buflisted':1})) == 1 ? ':q!<CR>' : ':bd!<CR>'
@@ -324,11 +328,11 @@ nmap <Leader>j <C-w><C-w>
 nmap <Leader>k <C-w>W
 
 " Lookups
-nmap <Leader>f :Bufs!<CR>
-nmap <Leader>F :Fls!<CR>
-nmap <Leader>o :Outline!<CR>
-nmap <Leader>/ :Rgp!<CR>
-nmap <Leader>g :silent grep!<Space><C-R>=expand("<cword>")<CR>
+nmap <Leader>: :Bufs<CR>
+nmap <Leader>f :Fls<CR>
+nmap <Leader>o :Otln<CR>
+nmap <Leader>g :Rgp<CR>
+nmap <Leader>/ :silent Grep<Space><C-R>=expand("<cword>")<CR>
 
 " Move block in visual mode
 vnoremap J :m '>+1<CR>gv=gv
@@ -380,15 +384,6 @@ augroup VimTune
 
   " Allow tabs in shell scripts
   au FileType sh setlocal noexpandtab
-
-  au BufEnter *.txt
-        \ if &ft ==# 'help' |
-        \     set tm=0 |
-        \     :nnoremap <buffer> <Space> <C-F>L |
-        \     :nnoremap <buffer> b <C-B>H |
-        \     :nnoremap <buffer> q :bd!<CR> |
-        \     execute "autocmd! BufLeave <buffer> set tm&" |
-        \ endif
 augroup END
 
 " vim-markdown
@@ -399,8 +394,8 @@ let g:markdown_fenced_languages = ['html', 'css', 'xml', 'vim', 'lua', 'c', 'sh'
 " https://github.com/jiangmiao/auto-pairs/pull/266
 let g:AutoPairs = {'(':')', '[':']', '{':'}', "'":"'", '"':'"', '`':'`'}
 let g:AutoPairsMapCh = 1
-let g:AutoPairsShortcutJump = '<C-L>'
-let g:AutoPairsShortcutFastWrap = '<C-S>'
+" let g:AutoPairsShortcutJump = '<C-L>'
+let g:AutoPairsShortcutFastWrap = '<C-L>'
 
 " asyncomplete.vim
 augroup Completions
@@ -470,12 +465,12 @@ augroup Rust
   au!
 
   " Set tags source for Rust
-  au BufRead *.rs :setlocal tags=./rusty-tags.vi;/,$RUST_SRC_PATH/rusty-tags.vi
-  au BufWritePost *.rs :silent! exec "!rusty-tags vi --quiet --start-dir=" . expand('%:p:h') . "&" | redraw!
+  au BufRead *.rs :setlocal tags=./.rusty-tags.vi;/,$RUST_SRC_PATH/.rusty-tags.vi
+  au BufWritePost *.rs :silent! exec "!rusty-tags vi --quiet --output=.rusty-tags.vi --start-dir=" . expand('%:p:h') . "&" | redraw!
   au BufWritePre *.rs call execute('LspDocumentFormatSync')
 
   " Single quote is a lifetime - turning it off
-  au FileType rust let g:AutoPairs = {'(':')', '[':']', '{':'}', '"':'"', '`':'`', '<':'>'}
+  au FileType rust let b:AutoPairs = {'(':')', '[':']', '{':'}', '"':'"', '`':'`', '<':'>'}
 augroup END
 
 augroup Golang
@@ -485,20 +480,19 @@ augroup END
 
 " grep with ripgrep
 if executable('rg')
-  " set grepprg=rg\ --vimgrep\ --color=never
-  set grepprg=rg\ --vimgrep\ --hidden\ --no-heading\ --smart-case
+  set grepprg=rg\ --vimgrep\ --hidden\ --no-heading\ --smart-case\ --glob=!.git/\ --glob=!.rusty-tags.vi
   set grepformat=%f:%l:%c:%m,%f:%l:%m
 
   command! -nargs=+ Grep grep <args> | cwindow
 
   " vim-ripgrep
-  let g:rg_command = 'rg --vimgrep --hidden --glob "!rusty-tags.vi"'
+  let g:rg_command = 'rg --vimgrep --hidden --glob=!.git/ --glob=!.rusty-tags.vi'
 endif
 
 augroup Skim
   au! FileType skim
 
-  function! GoToLine(delim, line)
+  function! s:GoToLine(delim, line)
     if a:delim ==# ':'
       let l:match = split(a:line, a:delim)
       let l:filename = l:match[0]
@@ -510,49 +504,94 @@ augroup Skim
     end
   endf
 
-  function! ListBufs()
+  function! s:ListBufs()
     redir =>output
     silent buffers
     redir END
-    " return map(split(output, "\n"), 'split(v:val, "\"")[1]')
     return split(output, "\n")
-  endfunct!
+  endf
+
+  function! s:BufsHandle(lines)
+    let l:key = a:lines[0]
+    if l:key == 'ctrl-x'
+      let l:idxs = join(map(a:lines[1:], 'split(v:val)[0]'))
+      exec 'bdelete ' . l:idxs
+      exec 'Bufs'
+    else
+      exec 'buffer ' . split(a:lines[1])[0]
+    endif
+  endf
+
+  function! s:OpenUp(mode, lines)
+    let l:qry = get(a:lines, 0, '')
+    let l:key = get(a:lines, 1, '')
+    let l:sel = get(a:lines, 2, '')
+
+    let l:carousel = {
+          \ 'Fls':  'Rgp',
+          \ 'Rgp':  'Otln',
+          \ 'Otln': 'Bufs',
+          \ 'Bufs': 'Fls' }
+
+    if l:key == 'tab'
+      exec ':' . get(l:carousel, a:mode, 'Fls') . ' ' . l:qry
+    elseif len(l:sel) == 0
+      exec 'edit ' . trim(l:qry, "'", 1)
+    elseif a:mode == 'Fls'
+      exec 'edit ' . l:sel
+    elseif a:mode == 'Rgp'
+      call s:GoToLine(':', l:sel)
+    elseif a:mode == 'Otln'
+      call s:GoToLine('\t', l:sel)
+    elseif a:mode == 'Bufs'
+      call s:BufsHandle(a:lines[1:])
+    endif
+  endf
 
   au FileType skim set noshowmode noruler | au BufLeave <buffer> set showmode ruler
 
-  command! -bang -nargs=? -complete=dir Bufs
+  command! -nargs=? Bufs
         \ call skim#run({
-        \     'source': ListBufs(),
-        \     'sink': { line -> execute('buffer ' . split(line)[0]) },
+        \     'source': s:ListBufs(),
+        \     'sink*': function('s:OpenUp', ['Bufs']),
         \     'options': ['--header= ', '--layout=reverse',
         \                 '--ansi', '--color=16', '--inline-info', '--prompt=Bufs> ',
         \                 '--cycle',
+        \                 '--query=' . <q-args>,
+        \                 '--multi', '--bind=space:toggle+down',
+        \                 '--print-query', '--expect=ctrl-x,tab',
         \                 '--delimiter="', '--nth=2',
         \                 '--preview-window=right:65%',
         \                 '--preview=bat --style=numbers --color=always {2}'] })
 
-  command! -bang -nargs=? -complete=dir Fls
+  command! -nargs=? Fls
         \ call skim#run({
-        \     'source': 'fd --color=always --type=file --max-depth=40 --hidden --exclude=.git --follow' . ( len(<q-args>) == 0 ? " ." : " . " . shellescape(<q-args>) ),
-        \     'sink': 'e',
+        \     'source': 'fd --color=always --type=file --max-depth=40 --hidden --exclude=.git --exclude=.rusty-tags.vi --follow .',
+        \     'sink*': function('s:OpenUp', ['Fls']),
         \     'options': ['--header= ', '--layout=reverse',
-        \                 '--ansi', '--color=16', '--inline-info', '--prompt=Files> ',
+        \                 '--ansi', '--color=16', '--inline-info', '--prompt=Fls> ',
         \                 '--cycle',
+        \                 '--expect=tab',
+        \                 '--print-query',
+        \                 '--query=' . <q-args>,
         \                 '--preview-window=right:65%',
         \                 '--preview=bat --style=numbers --color=always {1}'] })
 
-  command! -bang -nargs=? -complete=dir Rgp
+  command! -nargs=? Rgp
         \ call skim#run({
-        \     'source': 'rg --hidden --line-number --glob "!.git/" --glob "!rusty-tags.vi"' . ( len(<q-args>) == 0 ? " ." : " . " . shellescape(<q-args>) ),
-        \     'sink': function('GoToLine', [':']),
-        \     'options': ['--layout=reverse',
-        \                 '--delimiter=:', '--nth=3',
-        \                 '--color=16', '--inline-info', '--prompt=Rg> ',
+        \     'source': 'rg --color=always --line-number --hidden --glob !.git/ --glob !.rusty-tags.vi .',
+        \     'sink*': function('s:OpenUp', ['Rgp']),
+        \     'options': ['--header= ', '--layout=reverse',
+        \                 '--delimiter=:', '--nth=3..',
+        \                 '--color=16', '--inline-info', '--prompt=Rgp> ',
         \                 '--cycle',
+        \                 '--expect=tab',
+        \                 '--print-query',
+        \                 '--query=' . <q-args>,
         \                 '--preview-window=right:65%:+{2}-/2',
         \                 '--preview=bat --style=numbers --color=always --highlight-line={2} {1}'] })
 
-  command! -bang Outline
+  command! -nargs=? Otln
         \ call skim#run({
         \     'source': "ctags -f - --sort=foldcase --file-scope=no --all-kinds=* --fields=Kn " . expand('%:p') .
         \               ' | grep -F "/;\""'.
@@ -567,10 +606,14 @@ augroup Skim
         \               '           printf "%d\t%12s  %-31s\t%s\n", $5, $4, $1, $3;'.
         \               "         }'".
         \               " | sort -bk2,2",
-        \     'sink': function('GoToLine', ['\t']),
-        \     'options': ['--layout=reverse', '--no-sort',
+        \     'sink*': function('s:OpenUp', ['Otln']),
+        \     'options': ['--header= ', '--layout=reverse',
+        \                 '--no-sort',
+        \                 '--query=' . <q-args>,
+        \                 '--expect=tab',
+        \                 '--print-query',
         \                 '--delimiter=\t', '--nth=3',
-        \                 '--color=16', '--inline-info', '--prompt=Outline> ',
+        \                 '--color=16', '--inline-info', '--prompt=Otln> ',
         \                 '--cycle',
         \                 '--preview-window=right:65%:hidden:+{1}-/2',
         \                 '--preview=bat --style=numbers --color=always --highlight-line={1} ' . expand('%:p')] })
@@ -587,7 +630,7 @@ augroup Lsp
   endfunction
 
   let g:lsp_document_code_action_signs_enabled = 0
-  let g:lsp_diagnostics_virtual_text_enabled = 1
+  let g:lsp_diagnostics_virtual_text_enabled = 0
   let g:lsp_diagnostics_virtual_text_prefix = " ‣ "
   let g:lsp_semantic_enabled = 1
   let g:lsp_textprop_enabled = 1
@@ -634,19 +677,24 @@ augroup Targets
 augroup END
 
 function! s:GetPlugs(upgrade)
-  let l:plugs_dir = $HOME . '/.vim/pack/plugins/start/'
-  call system('mkdir -p ' . l:plugs_dir)
+  let l:plugs_dir = $HOME . '/.vim/pack/plugins/all/'
+  let l:start_dir = $HOME . '/.vim/pack/plugins/start'
+
+  call system('mkdir -p ' . l:plugs_dir . ' ' . l:start_dir)
 
   for l:repo in split(s:repos)
-    let l:dir = l:plugs_dir . split(l:repo,'\/')[-1]
-    if empty(glob(l:dir))
-      echo '>> Clone: ' . l:dir
-      echo system('git clone --depth 1 ' . shellescape(l:repo) . ' ' . shellescape(l:dir))
-    elseif a:upgrade > 0
-      echo '>> Pull: ' . l:dir
-      echo system('git -C ' . shellescape(l:dir) . ' pull --rebase --verbose')
+    let l:plug_name = split(l:repo,'\/')[-1]
+    let l:dest = l:plugs_dir . l:plug_name
+
+    if empty(glob(l:dest))
+      echo '>> Clone: ' . l:dest
+      echo system('git clone --depth 1 ' . shellescape(l:repo) . ' ' . l:dest)
+      echo system('ln -vs ../all/' . l:plug_name . ' ' . l:start_dir)
+    elseif a:upgrade
+      echo '>> Pull: ' . l:dest
+      echo system('git -C ' . shellescape(l:dest) . ' pull --rebase --verbose')
     else
-      echo '>> Skip: ' . l:dir
+      echo '>> Skip: ' . l:dest
     end
   endfor
 endfunction
