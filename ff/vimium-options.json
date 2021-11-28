@@ -1,0 +1,30 @@
+{
+  "settingsVersion": "1.67",
+  "exclusionRules": [
+    {
+      "pattern": "https?://mail.google.com/*",
+      "passKeys": ""
+    },
+    {
+      "pattern": "https?://_www.youtube.com/*",
+      "passKeys": ""
+    }
+  ],
+  "filterLinkHints": false,
+  "waitForEnterForFilteredHints": true,
+  "hideHud": false,
+  "keyMappings": "unmapAll\n\nmap i enterInsertMode\nmap v enterVisualMode\nmap V enterVisualLineMode\nmap <c-v> passNextKey\n\nmap j scrollDown\nmap k scrollUp\nmap h scrollLeft\nmap l scrollRight\nmap gg scrollToTop\nmap G scrollToBottom\nmap <c-d> scrollPageDown\nmap <c-u> scrollPageUp\nmap b scrollFullPageUp\nmap <space> scrollFullPageDown\n\nmap f LinkHints.activateMode\nmap F LinkHints.activateModeToOpenInNewTab\nmap yf LinkHints.activateModeToCopyLinkUrl\nmap yy copyCurrentUrl\n\nmap r reload\nmap R reload hard\n\" Temporary Containers\n\" - turn on Alt+O\n\" - remap to Alt+R\n\nmap : Vomnibar.activateInNewTab\nmap cc Vomnibar.activate\nmap p openCopiedUrlInCurrentTab\nmap P openCopiedUrlInNewTab\nmap tt duplicateTab\nmap q removeTab\nmap Q restoreTab\nmap ; visitPreviousTab\nmap ]] nextTab\nmap [[ previousTab\n\" Tree Style Tab\n\" - Toggle \"Tree Style Tab\" Sidebar C-Space\n\" - Focus to Next Tab (expand tree) C-p\n\" - Focus to Prev Tab (expand tree) C-p\n\n\" map t createTab about:newtab\nmap <c-h> moveTabLeft\nmap <c-l> moveTabRight\n\nmap gt Vomnibar.activateInNewTab keyword=tr\nmap gd Vomnibar.activateInNewTab keyword=gd\nmap gr Vomnibar.activateInNewTab keyword=wiktru\nmap ge Vomnibar.activateInNewTab keyword=wikten\nmap gw Vomnibar.activateInNewTab keyword=w\n\nmap <c-i> goForward\nmap <c-o> goBack\nmap >> goNext\nmap << goPrevious\nmap gh goToRoot\nmap gu goUp\nmap gi focusInput\nmap gf nextFrame\nmap gs toggleViewSource\n\nmap / enterFindMode\nmap n performFind\nmap N performBackwardsFind\nmap ? showHelp\n\nmap m Marks.activateCreateMode swap\nmap ' Marks.activateGotoMode swap\n\n# ---\n\nmapkey <c-c> <c-[>\nmapkey <c-с> <c-[>\n\nmapkey й q\n\n\nmapkey Ж :\nmapkey . /\nmapkey т n\nmapkey Т N\n\nmapkey о j\nmapkey л k\nmapkey р h\nmapkey д l\nmapkey пп gg\nmapkey П G\nmapkey и b\nmapkey <c-г> <c-u>\nmapkey <c-в> <c-d>\nmapkey <c-ш> <c-i>\nmapkey <c-щ> <c-o>",
+  "linkHintCharacters": "asdfghjklretuiopnm",
+  "linkHintNumbers": "0123456789",
+  "newTabUrl": "about:newtab",
+  "nextPatterns": "next,more,newer,>,›,→,»,≫,>>,след,наступныя",
+  "previousPatterns": "prev,previous,back,older,<,‹,←,«,≪,<<,пред,папярэднія",
+  "regexFindMode": true,
+  "ignoreKeyboardLayout": false,
+  "scrollStepSize": 40,
+  "smoothScroll": true,
+  "grabBackFocus": true,
+  "searchEngines": "gd: https://www.google.com/search?q=%s&hl=en#dobs=%s Google Dictionary\nwiktru: https://ru.wiktionary.org/w/index.php?title=Special:Search&search=%s Russian Wiktionary\nwikten: https://en.wiktionary.org/w/index.php?title=Special:Search&search=%s English Wiktionary\nw: https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s Wikipedia\ntr: https://translate.google.com/?source=osdd#auto|auto|%s Google Translator\nru: https://translate.google.com/?source=osdd#ru|en|%s Google Translator\nру: https://translate.google.com/?source=osdd#ru|en|%s Google Translator\nen: https://translate.google.com/?source=osdd#en|ru|%s Google Translator\ngh: https://github.com/search?q=%s GitHub\nso: https://stackoverflow.com/search?q=%s StackOverflow\nud: https://www.urbandictionary.com/define.php?term=%s UrbanDictionary\nyt: https://www.youtube.com/results?search_query=%s YouTube\nsite: javascript:location='https://www.google.com/search?num=100&q=site:'+escape(location.hostname)+'+%s'\n\n\n# More examples.\n#\n# (Vimium supports search completion Wikipedia, as\n# above, and for these.)\n#\n# g: https://www.google.com/search?q=%s Google\n# l: https://www.google.com/search?q=%s&btnI I'm feeling lucky...\n# y: https://www.youtube.com/results?search_query=%s Youtube\n# gm: https://www.google.com/maps?q=%s Google maps\n# b: https://www.bing.com/search?q=%s Bing\n# d: https://duckduckgo.com/?q=%s DuckDuckGo\n# az: https://www.amazon.com/s/?field-keywords=%s Amazon\n# qw: https://www.qwant.com/?q=%s Qwant",
+  "searchUrl": "https://www.google.com/search?q=",
+  "userDefinedLinkHintCss": "div > .vimiumHintMarker {\n/* linkhint boxes */\nbackground: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#FFF785),\n  color-stop(100%,#FFC542));\nborder: 1px solid #E3BE23;\n}\n\ndiv > .vimiumHintMarker span {\n/* linkhint text */\ncolor: black;\nfont-weight: bold;\nfont-size: 12px;\n}\n\ndiv > .vimiumHintMarker > .matchingCharacter {\n}"
+}
